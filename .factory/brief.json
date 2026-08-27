@@ -1,0 +1,12 @@
+{
+  "slug": "android-select-speak-canvas",
+  "title": "TapRead Canvas",
+  "territory": "utilities",
+  "user": "An Android user who needs text in a game, streamed desktop, image, or custom canvas read aloud quickly without waiting for the app to implement accessibility labels.",
+  "smallest_useful_product": "An Android accessibility-service companion: a user invokes a floating button, draws one rectangle, gets on-device OCR and immediate TTS, and can repeat the last region.",
+  "success_measure": "At least 80% of 30 user-selected regions are correctly read aloud within two seconds on mid-range hardware, with no network request.",
+  "artifact_class": "android",
+  "monetization": "one-time",
+  "constraints": "All OCR/TTS local; clear warning around sensitive screens; do not bypass DRM or protected-content controls.",
+  "state": "RESEARCHED"
+}
