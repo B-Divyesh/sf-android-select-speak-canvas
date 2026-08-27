@@ -20,12 +20,16 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('has a clear accessible primary screen', async ({ page }) => {
+  const consoleErrors: string[] = [];
+  page.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(message.text()); });
+  page.on('pageerror', (error) => consoleErrors.push(error.message));
   await page.goto('/');
   await expect(page.locator('main')).toBeVisible();
   await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
   await expect(page.getByRole('heading', { name: 'Frame it. Hear it.' })).toBeVisible();
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations.filter((item) => ['serious', 'critical'].includes(item.impact ?? ''))).toEqual([]);
+  expect(consoleErrors).toEqual([]);
 });
 
 test('loads a sample and supports the keyboard frame path', async ({ page }) => {
