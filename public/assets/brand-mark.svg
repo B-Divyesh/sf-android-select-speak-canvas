@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">TapRead Canvas selection and sound mark</title>
+  <rect width="64" height="64" rx="14" fill="#254C45"/>
+  <path d="M13 21v-8h12M51 21v-8H39M13 43v8h12M51 43v8H39" fill="none" stroke="#F2E7CE" stroke-width="4" stroke-linecap="square"/>
+  <path d="M23 37h5l7 6V21l-7 6h-5z" fill="#C84924"/>
+  <path d="M40 27c2 3 2 7 0 10M45 23c5 6 5 12 0 18" fill="none" stroke="#F2E7CE" stroke-width="3" stroke-linecap="round"/>
+</svg>

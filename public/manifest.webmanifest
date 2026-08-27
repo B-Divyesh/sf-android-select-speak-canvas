@@ -1,0 +1,19 @@
+{
+  "name": "TapRead Canvas",
+  "short_name": "TapRead",
+  "description": "Frame text in a screenshot or image and hear it read aloud, locally.",
+  "id": "/?source=installed",
+  "start_url": "/?v=1&source=installed",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F2E7CE",
+  "theme_color": "#254C45",
+  "icons": [
+    { "src": "/assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Read an image", "short_name": "Read", "url": "/?action=load", "icons": [{ "src": "/assets/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

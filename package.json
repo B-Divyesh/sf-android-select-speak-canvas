@@ -1,0 +1,36 @@
+{
+  "name": "tapread-canvas",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "sync:ocr": "node scripts/sync-ocr.mjs",
+    "predev": "npm run sync:ocr",
+    "dev": "vite",
+    "prebuild": "npm run sync:ocr",
+    "build": "tsc --noEmit && vite build && node scripts/postbuild.mjs",
+    "preview": "vite preview --host 127.0.0.1",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "check": "npm test && npm run build"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/core": "^7.4.3",
+    "@tesseract.js-data/eng": "^1.0.0",
+    "tesseract.js": "^6.0.1"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.10.2",
+    "@capacitor/cli": "^7.4.3",
+    "@playwright/test": "^1.55.0",
+    "jsdom": "^26.1.0",
+    "sharp": "^0.35.4",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.3",
+    "vitest": "^3.2.4"
+  }
+}

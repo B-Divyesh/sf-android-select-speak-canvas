@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#254C45" />
+    <meta name="description" content="Select text in a screenshot or image and hear it read aloud. OCR and speech stay on your device." />
+    <title>TapRead Canvas — frame it, hear it</title>
+    <link rel="icon" href="/assets/brand-mark.svg" type="image/svg+xml" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="preload" href="/fonts/atkinson-regular.ttf" as="font" type="font/ttf" crossorigin />
+    <link rel="preload" href="/assets/tapread-instrument-640.avif" as="image" type="image/avif" fetchpriority="high" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to main content</a>
+    <div id="app"></div>
+    <noscript>TapRead Canvas needs JavaScript to process images locally in your browser.</noscript>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

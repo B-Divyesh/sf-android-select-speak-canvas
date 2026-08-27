@@ -15,8 +15,8 @@ that explain state or affordance.
 - **Paper** `#FBF6E9`: raised controls and reading surfaces.
 - **Ink** `#182522`: primary text; 13.1:1 on enamel.
 - **Dial green** `#254C45`: panel surface and headings; 8.1:1 on enamel.
-- **Signal orange** `#C84924`: primary action and selection rectangle; white text
-  is not used on it—ink provides 4.8:1.
+- **Signal orange** `#E47743`: primary action and selection rectangle; white text
+  is not used on it—ink provides 5.3:1.
 - **Brass** `#A17632`: focus and instrument accents; ink provides 5.1:1.
 - **Muted** `#59645E`: secondary copy; 5.2:1 on enamel.
 - **Success** `#2B694D`, **warning** `#8A5412`, **danger** `#9D352C`.

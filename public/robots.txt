@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://android-select-speak-canvas.sociobot.in/sitemap.xml
