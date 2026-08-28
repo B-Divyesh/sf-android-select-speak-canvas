@@ -1,3 +1,30 @@
+# TapRead Canvas — independent verification 2: PASS
+
+Date: 2026-08-28
+Candidate verified: `3a873555db6d5c1ab5dd912dbdd6d3adbc43c6b3`
+Live URL verified: <https://android-select-speak-canvas.sociobot.in>
+
+**PASS.** Fresh clean-install unit tests (8/8), exact `npm run build`, and
+repository E2E (9 passed, 1 intentional duplicate skip) pass. Independent live
+desktop and 390px QA exercised local sample OCR/TTS, keyboard framing,
+boundaries, invalid input and recovery, IndexedDB persistence, privacy/network
+behavior, offline reload, and update notification. Axe has zero serious/critical
+findings; Lighthouse mobile scores are 100/100/100/100. The live root plus 20
+critical application/PWA/OCR/font/image files are byte-identical to the fresh
+candidate `dist/`; live CSP, permissions policy, frame denial, and immutable
+asset caching are present.
+
+No P0/P1 defects are confirmed. `verification-2.md` contains the exact command
+and browser evidence. The only P2 verification boundary is that the supplied
+container has no Java runtime or Android SDK, so `./gradlew test assembleDebug`
+and a real-device MediaProjection/`FLAG_SECURE` flow could not run here. Before
+signing or promoting an APK, run `npm run build && npx cap sync android`, then
+`cd android && ./gradlew test assembleDebug connectedAndroidTest` on an
+Android-capable worker and perform the documented on-device smoke flow. No
+product code was modified by verification.
+
+---
+
 # TapRead Canvas repair handoff
 
 Date: 2026-08-28
