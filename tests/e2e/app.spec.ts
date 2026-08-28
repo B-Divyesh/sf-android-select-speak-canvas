@@ -72,8 +72,10 @@ test('@claim:web-local-processing demo flow sends no cross-origin requests', asy
   const requests: string[] = [];
   page.on('request', (request) => requests.push(request.url()));
   await page.goto('/demo');
+  await page.locator('#recognizedText').fill('');
   await page.getByRole('button', { name: 'Read selected text' }).click();
   await expect(page.locator('#recognizedText')).toHaveValue(/north gate|opens at dawn/i, { timeout: 40_000 });
+  await expect(page.getByRole('button', { name: 'Read selected text' })).toBeEnabled();
   const stored = await page.evaluate(async () => new Promise<{ hasImage: boolean; text: string }>((resolve, reject) => {
     const open = indexedDB.open('demo:tapread-canvas');
     open.onerror = () => reject(open.error);
@@ -93,8 +95,10 @@ test('@claim:web-local-processing demo flow sends no cross-origin requests', asy
 test('@claim:local-ocr recognizes the shipped sample', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile', 'Run the expensive OCR outcome once.');
   await page.goto('/demo');
+  await page.locator('#recognizedText').fill('');
   await page.getByRole('button', { name: 'Read selected text' }).click();
   await expect(page.locator('#recognizedText')).toHaveValue(/north gate|opens at dawn/i, { timeout: 40_000 });
+  await expect(page.getByRole('button', { name: 'Read selected text' })).toBeEnabled();
 });
 
 test('@claim:image-size-limit accepts a valid 20 MB image and rejects one extra byte', async ({ page }, testInfo) => {
