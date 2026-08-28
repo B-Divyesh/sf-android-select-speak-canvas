@@ -324,8 +324,10 @@ h3 { font-size: 1.25rem; }
   align-items: center;
   gap: 16px;
   transition: transform 220ms ease;
+  visibility: hidden;
+  pointer-events: none;
 }
-.toast.visible { transform: none; }
+.toast.visible { transform: none; visibility: visible; pointer-events: auto; }
 
 .legal { max-width: 760px; margin: 0 auto; padding: 64px 24px 96px; }
 .legal h1 { max-width: none; font-size: clamp(2.5rem, 7vw, 4.5rem); }
