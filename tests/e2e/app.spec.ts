@@ -70,7 +70,10 @@ test('@claim:no-account-free demo and reader work without sign-in or payment', a
 test('@claim:web-local-processing demo flow sends no cross-origin requests', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile', 'Run the OCR network audit once.');
   const requests: string[] = [];
+  const errors: string[] = [];
   page.on('request', (request) => requests.push(request.url()));
+  page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
+  page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/demo');
   await expect(page.locator('#statusTitle')).toHaveText('Sample ready');
   await page.locator('#recognizedText').fill('');
@@ -90,7 +93,8 @@ test('@claim:web-local-processing demo flow sends no cross-origin requests', asy
   expect(stored.hasImage).toBe(true);
   expect(stored.text).toMatch(/north gate|opens at dawn/i);
   expect(requests.length).toBeGreaterThan(0);
-  expect(requests.every((url) => new URL(url).origin === new URL(page.url()).origin)).toBe(true);
+  expect(requests.every((url) => url.startsWith('data:') || new URL(url).origin === new URL(page.url()).origin)).toBe(true);
+  expect(errors).toEqual([]);
 });
 
 test('@claim:local-ocr recognizes the shipped sample', async ({ page }, testInfo) => {
