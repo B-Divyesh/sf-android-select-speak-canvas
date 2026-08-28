@@ -21,6 +21,13 @@
     "sandbox": "fresh /demo context; record the entire OCR flow request log; assert every request is same-origin and reader state is in demo IndexedDB"
   },
   {
+    "id": "device-speech",
+    "claim": "The web image reader speaks recognized or corrected text through the browser's installed speech voice.",
+    "where": "reader controls, how it works, privacy section, README",
+    "test": "npm run test:e2e -- --grep @claim:device-speech --project=chromium",
+    "sandbox": "fresh /demo context with an instrumented browser speech API; edit the sample text, speak it, and assert the exact spoken value"
+  },
+  {
     "id": "local-ocr",
     "claim": "The web image reader recognizes English text from the shipped sample on this device.",
     "where": "reader, privacy section, README",
@@ -33,6 +40,13 @@
     "where": "reader load step, README",
     "test": "npm run test:e2e -- --grep @claim:image-size-limit --project=chromium",
     "sandbox": "fresh /demo context; choose a generated 20 MB plus one byte PNG payload; assert the size error"
+  },
+  {
+    "id": "keyboard-selection",
+    "claim": "Keyboard users can move the text selection with arrows and resize it with Shift plus arrows.",
+    "where": "reader canvas help, README",
+    "test": "npm run test:e2e -- --grep @claim:keyboard-selection --project=chromium",
+    "sandbox": "fresh /demo context; focus the canvas; press Shift plus ArrowRight; assert the reported selection size changes"
   },
   {
     "id": "data-portability",

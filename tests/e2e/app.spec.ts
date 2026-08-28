@@ -10,7 +10,7 @@ test.beforeEach(async ({ page }) => {
       constructor(text: string) { this.text = text; }
     }
     Object.defineProperty(window, 'SpeechSynthesisUtterance', { value: MockUtterance });
-    Object.defineProperty(window, 'speechSynthesis', { value: { cancel() {}, speak(utterance: MockUtterance) { utterance.onstart?.(); setTimeout(() => utterance.onend?.(), 10); } }});
+    Object.defineProperty(window, 'speechSynthesis', { value: { cancel() {}, speak(utterance: MockUtterance) { Object.assign(window, { __tapreadSpoken: utterance.text }); utterance.onstart?.(); setTimeout(() => utterance.onend?.(), 10); } }});
   });
 });
 
@@ -66,6 +66,14 @@ test('@claim:no-account-free demo and reader work without sign-in or payment', a
   await expect(page.getByRole('link', { name: /buy|checkout|subscribe/i })).toHaveCount(0);
   await page.getByRole('button', { name: 'Speak edited text' }).click();
   await expect(page.locator('#statusTitle')).toContainText(/Speaking|Reading complete/);
+});
+
+test('@claim:device-speech speaks user-corrected text with the browser voice', async ({ page }) => {
+  await page.goto('/demo');
+  await expect(page.locator('#statusTitle')).toHaveText('Sample ready');
+  await page.locator('#recognizedText').fill('Corrected words to speak');
+  await page.getByRole('button', { name: 'Speak edited text' }).click();
+  await expect.poll(() => page.evaluate(() => (window as unknown as { __tapreadSpoken?: string }).__tapreadSpoken)).toBe('Corrected words to speak');
 });
 
 test('@claim:web-local-processing demo flow sends no cross-origin requests', async ({ page }, testInfo) => {
@@ -148,7 +156,7 @@ test('@claim:offline-reload keeps the demo available after installation', async 
   await expect(page.locator('#recognizedText')).toHaveValue('The north gate opens at dawn.');
 });
 
-test('selection is fully operable with a keyboard', async ({ page }) => {
+test('@claim:keyboard-selection moves and resizes the selection with the keyboard', async ({ page }) => {
   await page.goto('/demo');
   const canvas = page.getByLabel('Loaded image with movable text selection');
   const before = await page.locator('#selectionDescription').textContent();
