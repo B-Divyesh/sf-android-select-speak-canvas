@@ -72,6 +72,7 @@ test('@claim:web-local-processing demo flow sends no cross-origin requests', asy
   const requests: string[] = [];
   page.on('request', (request) => requests.push(request.url()));
   await page.goto('/demo');
+  await expect(page.locator('#statusTitle')).toHaveText('Sample ready');
   await page.locator('#recognizedText').fill('');
   await page.getByRole('button', { name: 'Read selected text' }).click();
   await expect(page.locator('#recognizedText')).toHaveValue(/north gate|opens at dawn/i, { timeout: 40_000 });
@@ -95,6 +96,7 @@ test('@claim:web-local-processing demo flow sends no cross-origin requests', asy
 test('@claim:local-ocr recognizes the shipped sample', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile', 'Run the expensive OCR outcome once.');
   await page.goto('/demo');
+  await expect(page.locator('#statusTitle')).toHaveText('Sample ready');
   await page.locator('#recognizedText').fill('');
   await page.getByRole('button', { name: 'Read selected text' }).click();
   await expect(page.locator('#recognizedText')).toHaveValue(/north gate|opens at dawn/i, { timeout: 40_000 });
@@ -104,6 +106,7 @@ test('@claim:local-ocr recognizes the shipped sample', async ({ page }, testInfo
 test('@claim:image-size-limit accepts a valid 20 MB image and rejects one extra byte', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile', 'Run the 40 MB transfer once.');
   await page.goto('/demo');
+  await expect(page.locator('#statusTitle')).toHaveText('Sample ready');
   const png = await readFile('public/assets/icon-192.png');
   const atLimit = Buffer.alloc(20 * 1024 * 1024);
   png.copy(atLimit);
@@ -115,6 +118,7 @@ test('@claim:image-size-limit accepts a valid 20 MB image and rejects one extra 
 
 test('@claim:data-portability exports and imports reader data', async ({ page }) => {
   await page.goto('/demo');
+  await expect(page.locator('#statusTitle')).toHaveText('Sample ready');
   await page.locator('#recognizedText').fill('Exported sample passage');
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Export reader data' }).click();
