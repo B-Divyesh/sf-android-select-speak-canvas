@@ -1,0 +1,14 @@
+{
+  "url": "https://android-select-speak-canvas.sociobot.in",
+  "loadMs": 821,
+  "errors": [],
+  "a11y": {
+    "title": "TapRead Canvas — hear selected image text",
+    "lang": "en",
+    "h1": 1,
+    "main": true,
+    "imgsMissingAlt": 0,
+    "buttonsUnlabeled": 0,
+    "textLength": 2411
+  }
+}
