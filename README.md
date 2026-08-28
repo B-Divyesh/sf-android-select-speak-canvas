@@ -1,16 +1,19 @@
 # TapRead Canvas
 
-TapRead Canvas is a private reading aid for Android users who encounter text
-inside screenshots, games, remote desktops, images, or custom canvases. Load
-an image, draw a rectangle around the words, and hear them through the device's
-text-to-speech voice. OCR runs locally; images and recognized text are never
-uploaded.
+TapRead Canvas is a private Android reading aid for text trapped in games,
+streams, remote desktops, images, or custom canvases. In the Android companion,
+turn on the explicitly described accessibility service, tap its floating
+TapRead button, approve Android's screen-share prompt, draw one rectangle, and
+hear it through the device voice. OCR runs locally; images and recognized text
+are never uploaded. The installable web app remains a screenshot/image fallback.
 
-The current factory artifact is an installable PWA plus a Capacitor Android
-project skeleton. It handles the complete screenshot/image workflow today.
-The system-wide floating overlay and AccessibilityService integration belong
-to the later native APK work order because a web deployment cannot capture
-another Android app's pixels.
+The artifact is an installable PWA plus a Capacitor Android companion. The
+native companion uses an `AccessibilityService` only to host the user-visible
+TapRead overlay; it does not inspect accessibility trees or window content.
+Pixels enter only after Android's `MediaProjection` consent dialog. It uses
+on-device ML Kit text recognition and Android text-to-speech, remembers the
+last frame/text for repeat, and refuses blank protected captures instead of
+attempting to bypass `FLAG_SECURE` or DRM.
 
 ## What is included
 
@@ -23,7 +26,9 @@ another Android app's pixels.
 - Optional ₹499 one-time supporter license for a 25-item local history; the
   core accessibility workflow and export are never gated
 - Direct `/privacy` and `/terms` pages
-- Capacitor 7 Android project at `android/`
+- Capacitor 7 Android project with native accessibility overlay, MediaProjection
+  consent flow, local ML Kit OCR, Android TTS, and repeat-last-region at
+  `android/`
 
 ## Develop
 
@@ -64,13 +69,16 @@ After a web build, sync it into the checked-in Capacitor skeleton:
 
 ```sh
 npx cap sync android
-npx cap open android
+cd android
+./gradlew test assembleDebug
 ```
 
 The application id is `in.sociobot.tapreadcanvas`; Android package identifiers
-cannot contain the hyphens in the factory slug. An APK is intentionally not
-built in this static-deploy work order. Release signing must use the factory
-keystore and must never be committed.
+cannot contain the hyphens in the factory slug. After installation, open the
+app, follow Android's accessibility-service disclosure, then tap the floating
+TapRead button and approve the system screen-share prompt for each capture
+session. Release signing must use the factory keystore and must never be
+committed.
 
 ## Billing configuration
 
@@ -90,8 +98,8 @@ secret is stored here.
 The browser stores only user-chosen content in IndexedDB and the license token
 in localStorage. A first online load is required to install approximately 9 MB
 of local OCR runtime/model data; subsequent readings make no OCR network call.
-Protected Android surfaces may produce black screenshots, and TapRead does not
-attempt to bypass DRM or `FLAG_SECURE`. OCR can be wrong, so safety-critical
-text must be checked against its source.
+Protected Android surfaces may produce black captures. TapRead refuses those
+frames and does not attempt to bypass DRM or `FLAG_SECURE`. OCR can be wrong,
+so safety-critical text must be checked against its source.
 
 Licensed under the [MIT License](LICENSE).

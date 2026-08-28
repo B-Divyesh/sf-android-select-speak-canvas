@@ -40,6 +40,9 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
+    // Bundled on-device Latin text recognition. This is not a cloud API and
+    // does not send a captured screen or recognized words off-device.
+    implementation 'com.google.mlkit:text-recognition:16.0.1'
 }
 
 apply from: 'capacitor.build.gradle'

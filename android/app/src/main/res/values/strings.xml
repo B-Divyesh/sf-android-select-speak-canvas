@@ -4,4 +4,8 @@
     <string name="title_activity_main">TapRead Canvas</string>
     <string name="package_name">in.sociobot.tapreadcanvas</string>
     <string name="custom_url_scheme">in.sociobot.tapreadcanvas</string>
+    <string name="accessibility_service_label">TapRead screen reader</string>
+    <string name="accessibility_service_description">Shows a TapRead button that you choose, then asks Android for permission to read a selected screen region aloud. It never reads passwords or bypasses protected screens.</string>
+    <string name="capture_notification_title">TapRead is framing this screen</string>
+    <string name="capture_notification_text">Choose the region to read, then TapRead will speak it locally.</string>
 </resources>
