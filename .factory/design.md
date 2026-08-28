@@ -74,3 +74,14 @@ no futuristic hologram, no medical imagery.
 
 Generated source and prompt sidecar live in `assets/src/`; production exports
 live in `public/assets/`. Generated imagery is disclosed in the site footer.
+The 1200×630 social preview in `public/assets/tapread-social.jpg` is a centre
+crop of that original scene. The 180px touch icon is derived from the
+hand-authored brand mark. No new stock or third-party artwork was added during
+polish round 1.
+
+## Demo treatment
+
+Demo mode keeps the same physical-instrument language. A signal-orange strip
+acts like a removable calibration label and stays visible while sample data is
+active. It contains the reset and exit controls without turning the product
+into a generic dashboard.

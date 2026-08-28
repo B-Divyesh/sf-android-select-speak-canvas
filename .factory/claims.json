@@ -1,0 +1,72 @@
+[
+  {
+    "id": "demo-isolation",
+    "claim": "The one-click demo loads sample data in separate storage and discards it when the visitor starts for real.",
+    "where": "landing action, demo banner, Privacy, README",
+    "test": "npm run test:e2e -- --grep @claim:demo-isolation --project=chromium",
+    "sandbox": "fresh browser context; seed normal IndexedDB; enter /demo; edit and reset; exit; assert normal value survives and demo database is deleted"
+  },
+  {
+    "id": "no-account-free",
+    "claim": "The reader and demo are free to use without an account or checkout.",
+    "where": "landing facts, Terms, README",
+    "test": "npm run test:e2e -- --grep @claim:no-account-free --project=chromium",
+    "sandbox": "fresh /demo context; assert no identity or payment controls and complete a speech action"
+  },
+  {
+    "id": "web-local-processing",
+    "claim": "The web image reader keeps chosen images and recognized text on this device and sends no cross-origin requests during reading.",
+    "where": "landing facts, privacy section, Privacy, README",
+    "test": "npm run test:e2e -- --grep @claim:web-local-processing --project=chromium",
+    "sandbox": "fresh /demo context; record the entire OCR flow request log; assert every request is same-origin and reader state is in demo IndexedDB"
+  },
+  {
+    "id": "local-ocr",
+    "claim": "The web image reader recognizes English text from the shipped sample on this device.",
+    "where": "reader, privacy section, README",
+    "test": "npm run test:e2e -- --grep @claim:local-ocr --project=chromium",
+    "sandbox": "fresh /demo context; run the bundled Tesseract worker and model; assert the observed text contains the sample words"
+  },
+  {
+    "id": "image-size-limit",
+    "claim": "The web image reader accepts supported images up to 20 MB and rejects larger files.",
+    "where": "reader load step, README",
+    "test": "npm run test:e2e -- --grep @claim:image-size-limit --project=chromium",
+    "sandbox": "fresh /demo context; choose a generated 20 MB plus one byte PNG payload; assert the size error"
+  },
+  {
+    "id": "data-portability",
+    "claim": "Users can export and import saved reader text and settings as JSON.",
+    "where": "data section, Privacy, README",
+    "test": "npm run test:e2e -- --grep @claim:data-portability --project=chromium",
+    "sandbox": "fresh /demo context; export edited text and inspect JSON; import a valid fixture and assert restored text"
+  },
+  {
+    "id": "offline-reload",
+    "claim": "The installed web image reader works offline after the first visit.",
+    "where": "README, manifest",
+    "test": "npm run test:e2e -- --grep @claim:offline-reload --project=chromium",
+    "sandbox": "fresh /demo context; wait for service worker control; switch context offline; reload and assert seeded demo remains usable"
+  },
+  {
+    "id": "android-private-capture",
+    "claim": "The Android companion requests screen-share approval, does not inspect accessibility trees, and recognizes and speaks text on-device.",
+    "where": "landing steps, privacy section, Privacy, Terms, README",
+    "test": "npm test -- --run tests/native-companion.test.ts -t @claim:android-private-capture",
+    "sandbox": "clean source checkout; inspect the bound service metadata, MediaProjection consent path, ML Kit client, and Android TextToSpeech construction"
+  },
+  {
+    "id": "android-selection-memory",
+    "claim": "The Android companion remembers the last selection and reading for repeat.",
+    "where": "landing steps, Privacy, README",
+    "test": "npm test -- --run tests/native-companion.test.ts -t @claim:android-selection-memory",
+    "sandbox": "clean source checkout; assert the service uses RegionMemory and persists and reads the last spoken text"
+  },
+  {
+    "id": "protected-captures",
+    "claim": "TapRead does not bypass Android protected-screen controls and refuses likely blank protected captures.",
+    "where": "reader notice, Terms, README",
+    "test": "npm test -- --run tests/native-companion.test.ts -t @claim:protected-captures",
+    "sandbox": "clean source checkout; assert the native protected-buffer refusal path is present"
+  }
+]

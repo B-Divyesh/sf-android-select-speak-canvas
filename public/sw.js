@@ -3,6 +3,9 @@ const SHELL = `${VERSION}-shell`;
 const RUNTIME = `${VERSION}-runtime`;
 const PRECACHE = [
   '/',
+  '/demo',
+  '/privacy',
+  '/terms',
   '/offline.html',
   '/manifest.webmanifest',
   '/assets/brand-mark.svg',

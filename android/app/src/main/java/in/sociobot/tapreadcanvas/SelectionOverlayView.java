@@ -23,7 +23,7 @@ final class SelectionOverlayView extends View {
         edge.setColor(Color.rgb(228, 119, 67));
         edge.setStyle(Paint.Style.STROKE);
         edge.setStrokeWidth(6f);
-        setContentDescription("Draw a rectangle around the text to read");
+        setContentDescription("Draw a selection around the text to read");
     }
 
     RectF frame() { return new RectF(frame); }

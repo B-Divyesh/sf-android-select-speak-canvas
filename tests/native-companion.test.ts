@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 const read = (path: string) => readFile(new URL(path, import.meta.url), 'utf8');
 
 describe('native Android companion regression contract', () => {
-  it('declares a bound accessibility service and only user-consented projection capture', async () => {
+  it('@claim:android-private-capture uses a visible service, consent, on-device recognition, and device speech', async () => {
     const manifest = await read('../android/app/src/main/AndroidManifest.xml');
     const metadata = await read('../android/app/src/main/res/xml/tapread_accessibility_service.xml');
     const service = await read('../android/app/src/main/java/in/sociobot/tapreadcanvas/TapReadAccessibilityService.java');
@@ -18,17 +18,20 @@ describe('native Android companion regression contract', () => {
     expect(service).toMatch(/TYPE_ACCESSIBILITY_OVERLAY/);
     expect(service).toMatch(/getMediaProjection/);
     expect(service).toMatch(/ImageReader\.newInstance/);
-  });
-
-  it('keeps OCR, speech, repeat-region state, and secure-screen refusal on device', async () => {
-    const service = await read('../android/app/src/main/java/in/sociobot/tapreadcanvas/TapReadAccessibilityService.java');
-    const safety = await read('../android/app/src/main/java/in/sociobot/tapreadcanvas/ScreenSafety.java');
-
     expect(service).toMatch(/TextRecognition\.getClient/);
     expect(service).toMatch(/InputImage\.fromBitmap/);
     expect(service).toMatch(/new TextToSpeech/);
+  });
+
+  it('@claim:android-selection-memory stores the last selection and reading for repeat', async () => {
+    const service = await read('../android/app/src/main/java/in/sociobot/tapreadcanvas/TapReadAccessibilityService.java');
     expect(service).toMatch(/putString\("last_text"/);
     expect(service).toMatch(/getString\("last_text"/);
+    expect(service).toMatch(/RegionMemory/);
+  });
+
+  it('@claim:protected-captures refuses likely protected blank captures', async () => {
+    const safety = await read('../android/app/src/main/java/in/sociobot/tapreadcanvas/ScreenSafety.java');
     expect(safety).toMatch(/isLikelyProtectedBlank/);
   });
 });
@@ -36,7 +39,7 @@ describe('native Android companion regression contract', () => {
 describe('static host protection regression contract', () => {
   it('ships deployable CSP, permission policy, framing protection, and immutable hashed asset caching', async () => {
     const headers = await read('../public/_headers');
-    const swa = JSON.parse(await read('../public/staticwebapp.config.json')) as { globalHeaders: Record<string, string>; routes: Array<{ route: string; headers?: Record<string, string> }> };
+    const swa = JSON.parse(await read('../public/staticwebapp.config.json')) as { globalHeaders: Record<string, string>; routes: Array<{ route: string; headers?: Record<string, string> }>; navigationFallback?: unknown; responseOverrides: { '404': { rewrite: string } } };
     expect(headers).toMatch(/Content-Security-Policy:/);
     expect(headers).toMatch(/wasm-unsafe-eval/);
     expect(headers).toMatch(/frame-ancestors 'none'/);
@@ -48,5 +51,7 @@ describe('static host protection regression contract', () => {
     expect(swa.globalHeaders['Permissions-Policy']).toContain('camera=()');
     expect(swa.globalHeaders['X-Frame-Options']).toBe('DENY');
     expect(swa.routes.find((route) => route.route === '/assets/*')?.headers?.['Cache-Control']).toContain('immutable');
+    expect(swa.navigationFallback).toBeUndefined();
+    expect(swa.responseOverrides['404'].rewrite).toBe('/404.html');
   });
 });

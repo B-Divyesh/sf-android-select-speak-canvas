@@ -10,7 +10,8 @@ const injectedWorker = serviceWorker.replace("const VERSION = 'tapread-v1';", `c
 );
 await writeFile('dist/sw.js', injectedWorker);
 
-for (const route of ['privacy', 'terms']) {
+for (const route of ['demo', 'privacy', 'terms']) {
   await mkdir(`dist/${route}`, { recursive: true });
   await copyFile('dist/index.html', `dist/${route}/index.html`);
 }
+await copyFile('dist/index.html', 'dist/404.html');

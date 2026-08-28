@@ -84,7 +84,7 @@ public final class TapReadAccessibilityService extends AccessibilityService {
         trigger.setTextColor(0xff182522);
         trigger.setTextSize(14);
         trigger.setGravity(Gravity.CENTER);
-        trigger.setContentDescription("TapRead: choose a screen region to read aloud");
+        trigger.setContentDescription("TapRead: choose screen text to read aloud");
         trigger.setBackgroundColor(0xffE47743);
         trigger.setPadding(16, 12, 16, 12);
         trigger.setOnClickListener(v -> requestCaptureConsent());
@@ -169,7 +169,7 @@ public final class TapReadAccessibilityService extends AccessibilityService {
         FrameLayout.LayoutParams actionsLayout = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM);
         selectionRoot.addView(actions, actionsLayout);
         windows.addView(selectionRoot, overlayParams(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT));
-        announce("Draw a rectangle around text, then choose Read selection.");
+        announce("Draw a selection around text, then choose Read selection.");
     }
 
     private Button actionButton(String label, android.view.View.OnClickListener listener) {
@@ -198,11 +198,11 @@ public final class TapReadAccessibilityService extends AccessibilityService {
         recognizer.process(InputImage.fromBitmap(region, 0))
                 .addOnSuccessListener(result -> {
                     String text = result.getText().trim();
-                    if (text.isEmpty()) { announce("No text was found. Draw a tighter frame and try again."); return; }
+                    if (text.isEmpty()) { announce("No text was found. Draw a tighter selection and try again."); return; }
                     saved.edit().putString("last_text", text).apply();
                     speak(text);
                 })
-                .addOnFailureListener(error -> announce("TapRead could not read that region. Try a clearer frame."));
+                .addOnFailureListener(error -> announce("TapRead could not read that selection. Try a clearer image."));
     }
 
     private void repeatLast() {
@@ -214,7 +214,7 @@ public final class TapReadAccessibilityService extends AccessibilityService {
         if (tts == null) { announce("Text to speech is not ready. Try again in a moment."); return; }
         tts.stop();
         tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "tapread-last-region");
-        announce("Speaking selected text. Use the TapRead button to frame another region.");
+        announce("Speaking selected text. Use the TapRead button to make another selection.");
     }
 
     private void removeSelection() {

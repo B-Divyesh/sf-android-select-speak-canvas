@@ -45,7 +45,3 @@ export function sanitizeOcrText(text: string): string {
     .replace(/[ \t]{2,}/g, ' ')
     .trim();
 }
-
-export function licenseIsFresh(checkedAt: number, now = Date.now()): boolean {
-  return now - checkedAt < 24 * 60 * 60 * 1000;
-}

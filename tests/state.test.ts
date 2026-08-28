@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clampSelection, defaultSelection, denormalizedSelection, licenseIsFresh, normalizedSelection, sanitizeOcrText } from '../src/state';
+import { clampSelection, defaultSelection, denormalizedSelection, normalizedSelection, sanitizeOcrText } from '../src/state';
 
 describe('reading frame', () => {
   it('starts inset and occupies the useful centre of an image', () => {
@@ -19,13 +19,5 @@ describe('reading frame', () => {
 describe('OCR output', () => {
   it('removes scanner whitespace without flattening paragraphs', () => {
     expect(sanitizeOcrText(' First   line  \n\n\nSecond line  ')).toBe('First line\n\nSecond line');
-  });
-});
-
-describe('license cache', () => {
-  it('expires after one day', () => {
-    const now = Date.UTC(2026, 7, 27);
-    expect(licenseIsFresh(now - 1_000, now)).toBe(true);
-    expect(licenseIsFresh(now - 86_400_001, now)).toBe(false);
   });
 });

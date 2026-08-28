@@ -9,12 +9,29 @@ export type SavedState = {
 
 export type HistoryItem = { text: string; createdAt: number };
 
-const DB_NAME = 'tapread-canvas';
 const STORE = 'local-data';
+let databaseName = 'tapread-canvas';
+
+export function useStorageNamespace(demo: boolean): void {
+  databaseName = demo ? 'demo:tapread-canvas' : 'tapread-canvas';
+}
+
+export function currentStorageNamespace(): string {
+  return databaseName;
+}
+
+export function resetDemoStorage(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.deleteDatabase('demo:tapread-canvas');
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+    request.onblocked = () => resolve();
+  });
+}
 
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 1);
+    const request = indexedDB.open(databaseName, 1);
     request.onupgradeneeded = () => {
       if (!request.result.objectStoreNames.contains(STORE)) request.result.createObjectStore(STORE);
     };
@@ -51,12 +68,13 @@ export async function addHistory(item: HistoryItem): Promise<void> {
   await storeValue('history', next);
 }
 
-export async function exportLocalData(): Promise<string> {
+export async function exportLocalData(textOverride?: string): Promise<string> {
   const [state, history] = await Promise.all([
     getValue<SavedState>('state'),
     getValue<HistoryItem[]>('history'),
   ]);
-  return JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), state, history: history ?? [] }, null, 2);
+  const exportedState = state && textOverride !== undefined ? { ...state, text: textOverride, updatedAt: Date.now() } : state;
+  return JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), state: exportedState, history: history ?? [] }, null, 2);
 }
 
 export async function importLocalData(raw: string): Promise<void> {
