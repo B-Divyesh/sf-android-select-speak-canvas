@@ -23,6 +23,7 @@ test('first screen states the job and offers a working sample', async ({ page })
   await expect(page.getByRole('link', { name: 'Try it with sample data' })).toBeVisible();
   await expect(page.locator('main')).toBeVisible();
   await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
+  await expect(page.locator('#updateToast')).not.toHaveClass(/visible/);
   expect(errors).toEqual([]);
 });
 
