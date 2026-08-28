@@ -121,3 +121,5 @@ Deployed successfully on 2026-08-28 with Azure Static Web Apps deployment
   `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, referrer policy,
   and COOP. The live hashed `assets/index-Bm9Qv8Kc.js` returned
   `Cache-Control: public, max-age=31536000, immutable`.
+- Live `/` byte-matched the deployed `dist/index.html`; SHA-256:
+  `f4483a10bb5623e194d17b78b99d39f85b09e151d194c45eadf3064e89de40a6`.
