@@ -107,3 +107,17 @@ curl -sSI https://android-select-speak-canvas.sociobot.in/assets/<hashed-main>.j
 
 Confirm CSP, Permissions-Policy, `X-Frame-Options: DENY`, and immutable asset
 caching are present on the live identity before Android release promotion.
+
+## Live deployment evidence
+
+Deployed successfully on 2026-08-28 with Azure Static Web Apps deployment
+`73dad451-0064-4c2e-9bf7-300865f3e248`; the custom domain was already `Ready`.
+
+- `https://android-select-speak-canvas.sociobot.in` returned **200**.
+- The factory browser verifier completed with **746 ms** initial load, no page
+  or console errors, title present, `lang="en"`, exactly one `<h1>`, a main
+  landmark, and zero images without alt attributes.
+- Live `/` returned the configured CSP, `Permissions-Policy`,
+  `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, referrer policy,
+  and COOP. The live hashed `assets/index-Bm9Qv8Kc.js` returned
+  `Cache-Control: public, max-age=31536000, immutable`.
