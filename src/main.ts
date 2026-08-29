@@ -161,6 +161,7 @@ async function startProduct(demo: boolean): Promise<() => void> {
   let selection: Selection | null = null;
   let worker: Worker | null = null;
   let pointerStart: { x: number; y: number } | null = null;
+  let speechRequest = 0;
 
   const saved = await getValue<SavedState>('state').catch(() => undefined);
   if (saved) { recognizedText.value = saved.text; rateInput.value = String(saved.rate || 1); rateValue.value = `${Number(rateInput.value).toFixed(1)}×`; setTextButtons(); }
@@ -199,7 +200,19 @@ async function startProduct(demo: boolean): Promise<() => void> {
   }
 
   function speak(text: string): void {
-    if (!('speechSynthesis' in window)) return setStatus('Speech is unavailable', 'Use a browser with device speech, or read the recognized text.', 'error'); speechSynthesis.cancel(); const utterance = new SpeechSynthesisUtterance(text); utterance.rate = Number(rateInput.value); utterance.onstart = () => { stopButton.disabled = false; setStatus('Speaking', 'Choose Stop speech whenever you need it.', 'success'); }; utterance.onend = () => { stopButton.disabled = true; setStatus('Reading complete', 'Repeat the text or adjust the selection.', 'success'); }; utterance.onerror = () => { stopButton.disabled = true; setStatus('Speech stopped', 'Choose Speak edited text to try again.', 'error'); }; speechSynthesis.speak(utterance);
+    if (!('speechSynthesis' in window)) return setStatus('Speech is unavailable', 'Use a browser with device speech, or read the recognized text.', 'error');
+    const request = ++speechRequest;
+    speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = Number(rateInput.value);
+    // Keep the stop control available while a browser queues a voice. Some
+    // installed voices delay `onstart`, but a queued reading must still stop.
+    stopButton.disabled = false;
+    setStatus('Speaking', 'Choose Stop speech whenever you need it.', 'success');
+    utterance.onstart = () => { if (request === speechRequest) { stopButton.disabled = false; setStatus('Speaking', 'Choose Stop speech whenever you need it.', 'success'); } };
+    utterance.onend = () => { if (request === speechRequest) { stopButton.disabled = true; setStatus('Reading complete', 'Repeat the text or adjust the selection.', 'success'); } };
+    utterance.onerror = () => { if (request === speechRequest) { stopButton.disabled = true; setStatus('Speech stopped', 'Choose Speak edited text to try again.', 'error'); } };
+    speechSynthesis.speak(utterance);
   }
 
   function setTextButtons(): void { const hasText = Boolean(recognizedText.value.trim()); repeatButton.disabled = !hasText; speakEditedButton.disabled = !hasText; }
@@ -211,7 +224,7 @@ async function startProduct(demo: boolean): Promise<() => void> {
   document.addEventListener('paste', pasteHandler); const dropZone = document.querySelector<HTMLElement>('#dropZone')!; dropZone.addEventListener('dragover', (event) => event.preventDefault()); dropZone.addEventListener('drop', (event) => { event.preventDefault(); const file = event.dataTransfer?.files[0]; if (file) void loadBlob(file); });
   document.querySelector('#sampleButton')!.addEventListener('click', () => void makeSample().then((blob) => loadBlob(blob)));
   clearButton.addEventListener('click', () => { canvas.classList.remove('loaded'); canvasHelp.classList.add('hidden'); emptyState.classList.remove('hidden'); clearButton.classList.add('hidden'); selection = null; recognizedText.value = ''; setTextButtons(); readButton.disabled = true; resetSelectionButton.disabled = true; void storeValue('image', null); void saveState(); setStatus('Image cleared', 'Choose another image when you are ready.', 'idle'); });
-  resetSelectionButton.addEventListener('click', () => { selection = defaultSelection(canvas.width, canvas.height); draw(); void saveState(); }); readButton.addEventListener('click', () => void recognize()); repeatButton.addEventListener('click', () => speak(recognizedText.value.trim())); speakEditedButton.addEventListener('click', () => speak(recognizedText.value.trim())); stopButton.addEventListener('click', () => { speechSynthesis.cancel(); stopButton.disabled = true; setStatus('Speech stopped', 'Your recognized text is still available.', 'idle'); }); recognizedText.addEventListener('input', () => { setTextButtons(); void saveState(); }); rateInput.addEventListener('input', () => { rateValue.value = `${Number(rateInput.value).toFixed(1)}×`; void saveState(); });
+  resetSelectionButton.addEventListener('click', () => { selection = defaultSelection(canvas.width, canvas.height); draw(); void saveState(); }); readButton.addEventListener('click', () => void recognize()); repeatButton.addEventListener('click', () => speak(recognizedText.value.trim())); speakEditedButton.addEventListener('click', () => speak(recognizedText.value.trim())); stopButton.addEventListener('click', () => { speechRequest += 1; speechSynthesis.cancel(); stopButton.disabled = true; setStatus('Speech stopped', 'Your recognized text is still available.', 'idle'); }); recognizedText.addEventListener('input', () => { setTextButtons(); void saveState(); }); rateInput.addEventListener('input', () => { rateValue.value = `${Number(rateInput.value).toFixed(1)}×`; void saveState(); });
   document.querySelector<HTMLButtonElement>('#resetDemo')?.addEventListener('click', async () => { await resetDemoStorage(); location.assign('/demo'); }); document.querySelector('#startReal')?.addEventListener('click', () => void resetDemoStorage());
   setupNetwork(); setupInstall(); setupNativeDemo(); setupDataTools();
   return () => { document.removeEventListener('paste', pasteHandler); void worker?.terminate(); };

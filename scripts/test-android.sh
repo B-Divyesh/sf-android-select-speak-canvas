@@ -25,10 +25,10 @@ export JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/java-21-openjdk-amd64}"
 
 npm run build
 npx cap sync android
-android/gradlew -p android testDebugUnitTest --tests "$unit_filter" assembleDebug assembleDebugAndroidTest
+android/gradlew -p android :app:testDebugUnitTest --tests "$unit_filter" :app:assembleDebug :app:assembleDebugAndroidTest
 
-if "$ANDROID_HOME/platform-tools/adb" get-state >/dev/null 2>&1; then
-  android/gradlew -p android connectedDebugAndroidTest
+if "$ANDROID_HOME/platform-tools/adb" get-state >/dev/null 2>&1 && "$ANDROID_HOME/platform-tools/adb" shell getprop ro.build.version.sdk >/dev/null 2>&1; then
+  android/gradlew -p android :app:connectedDebugAndroidTest
 else
   echo "Android instrumentation was compiled but no device is connected." >&2
 fi

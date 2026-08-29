@@ -26,6 +26,9 @@ import java.util.Locale;
 /** A bundled, account-free first-run sample of the native recognition and speech path. */
 public final class SampleScreenActivity extends Activity {
     static final String SAMPLE_TEXT = "The north gate opens at dawn.";
+    static final int LOAD_BUTTON_ID = 0x1f000001;
+    static final int HEAR_BUTTON_ID = 0x1f000002;
+    static final int REPEAT_BUTTON_ID = 0x1f000003;
     private LinearLayout root;
     private TextView status;
     private TextToSpeech speech;
@@ -50,7 +53,7 @@ public final class SampleScreenActivity extends Activity {
         root.addView(text("Try TapRead with sample text", 28, true));
         root.addView(text("This bundled screen uses no capture permission and saves no personal content.", 18, false));
         Button load = button("Load sample screen");
-        load.setId(View.generateViewId());
+        load.setId(LOAD_BUTTON_ID);
         load.setContentDescription("Load sample screen");
         load.setOnClickListener(view -> loadSample());
         root.addView(load);
@@ -89,8 +92,10 @@ public final class SampleScreenActivity extends Activity {
 
     private void addSpeechControls() {
         Button hear = button("Hear sample");
+        hear.setId(HEAR_BUTTON_ID);
         hear.setOnClickListener(view -> speakRecognized());
         Button repeat = button("Repeat last reading");
+        repeat.setId(REPEAT_BUTTON_ID);
         repeat.setOnClickListener(view -> speakRecognized());
         root.addView(hear);
         root.addView(repeat);

@@ -1,0 +1,14 @@
+{
+  "url": "https://android-select-speak-canvas.sociobot.in/demo",
+  "loadMs": 815,
+  "errors": [],
+  "a11y": {
+    "title": "Demo — TapRead Canvas",
+    "lang": "en",
+    "h1": 1,
+    "main": true,
+    "imgsMissingAlt": 0,
+    "buttonsUnlabeled": 0,
+    "textLength": 2904
+  }
+}

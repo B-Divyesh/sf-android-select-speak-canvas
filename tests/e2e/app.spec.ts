@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import { createHash } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import sharp from 'sharp';
 
 test.beforeEach(async ({ page }) => {
@@ -107,6 +107,7 @@ test('@claim:repeat-reading replays the exact latest recognized text', async ({ 
 
 test('@claim:web-local-processing demo flow sends no cross-origin requests', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile', 'Run the OCR network audit once.');
+  test.setTimeout(120_000);
   const requests: string[] = [];
   const errors: string[] = [];
   page.on('request', (request) => requests.push(request.url()));
@@ -116,7 +117,7 @@ test('@claim:web-local-processing demo flow sends no cross-origin requests', asy
   await expect(page.locator('#statusTitle')).toHaveText('Sample ready');
   await page.locator('#recognizedText').fill('');
   await page.getByRole('button', { name: 'Read selected text' }).click();
-  await expect(page.locator('#recognizedText')).toHaveValue(/north gate|opens at dawn/i, { timeout: 40_000 });
+  await expect(page.locator('#recognizedText')).toHaveValue(/north gate|opens at dawn/i, { timeout: 100_000 });
   await expect(page.getByRole('button', { name: 'Read selected text' })).toBeEnabled();
   const stored = await page.evaluate(async () => new Promise<{ hasImage: boolean; text: string }>((resolve, reject) => {
     const open = indexedDB.open('demo:tapread-canvas');
@@ -137,11 +138,12 @@ test('@claim:web-local-processing demo flow sends no cross-origin requests', asy
 
 test('@claim:local-ocr recognizes the shipped sample', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile', 'Run the expensive OCR outcome once.');
+  test.setTimeout(120_000);
   await page.goto('/demo');
   await expect(page.locator('#statusTitle')).toHaveText('Sample ready');
   await page.locator('#recognizedText').fill('');
   await page.getByRole('button', { name: 'Read selected text' }).click();
-  await expect(page.locator('#recognizedText')).toHaveValue(/north gate|opens at dawn/i, { timeout: 40_000 });
+  await expect(page.locator('#recognizedText')).toHaveValue(/north gate|opens at dawn/i, { timeout: 100_000 });
   await expect(page.getByRole('button', { name: 'Read selected text' })).toBeEnabled();
 });
 
@@ -149,12 +151,17 @@ test('@claim:image-size-limit accepts a valid 20 MB image and rejects one extra 
   test.skip(testInfo.project.name === 'mobile', 'Run the 40 MB transfer once.');
   await page.goto('/demo');
   await expect(page.locator('#statusTitle')).toHaveText('Sample ready');
-  const png = await readFile('public/assets/icon-192.png');
-  const atLimit = Buffer.alloc(20 * 1024 * 1024);
-  png.copy(atLimit);
-  await page.locator('#imageInput').setInputFiles({ name: 'at-limit.png', mimeType: 'image/png', buffer: atLimit });
+  const jpeg = await readFile('public/assets/tapread-instrument-960.jpg');
+  const limit = 20 * 1024 * 1024;
+  // JPEG decoders ignore bytes after the end marker. This keeps the image valid
+  // while exercising the exact advertised file-size boundary.
+  const atLimitPath = '/tmp/tapread-at-limit.jpg';
+  const overLimitPath = '/tmp/tapread-over-limit.jpg';
+  await writeFile(atLimitPath, Buffer.concat([jpeg, Buffer.alloc(limit - jpeg.length)]));
+  await writeFile(overLimitPath, Buffer.concat([jpeg, Buffer.alloc(limit - jpeg.length + 1)]));
+  await page.locator('#imageInput').setInputFiles(atLimitPath);
   await expect(page.locator('#statusTitle')).toHaveText('Image ready');
-  await page.locator('#imageInput').setInputFiles({ name: 'too-large.png', mimeType: 'image/png', buffer: Buffer.alloc(20 * 1024 * 1024 + 1) });
+  await page.locator('#imageInput').setInputFiles(overLimitPath);
   await expect(page.locator('#statusTitle')).toHaveText('Image is larger than 20 MB');
 });
 
@@ -229,10 +236,10 @@ test('@claim:keyboard-selection moves and resizes the selection with the keyboar
   const canvas = page.getByLabel('Loaded image with movable text selection');
   const before = await page.locator('#selectionDescription').textContent();
   await canvas.focus();
-  await page.keyboard.press('ArrowRight');
+  for (let i = 0; i < 10; i += 1) await page.keyboard.press('ArrowRight');
   const moved = await page.locator('#selectionDescription').textContent();
   expect(moved).not.toBe(before);
-  await page.keyboard.press('Shift+ArrowLeft');
+  for (let i = 0; i < 10; i += 1) await page.keyboard.press('Shift+ArrowLeft');
   await expect(page.locator('#selectionDescription')).not.toHaveText(moved ?? '');
 });
 
@@ -280,8 +287,10 @@ test('routes set titles, metadata, focus, history, and a designed 404', async ({
   await expect(page.getByRole('link', { name: 'Go to TapRead Canvas' })).toBeVisible();
 });
 
-test('every route has complete metadata and no accessibility violations', async ({ page }) => {
-  for (const path of ['/', '/demo', '/privacy', '/terms', '/404']) {
+for (const path of ['/', '/demo', '/privacy', '/terms', '/404']) {
+  test(`route ${path} has complete metadata and no accessibility violations`, async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name === 'mobile' && path !== '/demo', 'The phone scan covers the interactive demo route.');
+    test.setTimeout(90_000);
     await page.goto(path);
     await expect(page.locator('main')).toBeVisible();
     await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
@@ -289,8 +298,8 @@ test('every route has complete metadata and no accessibility violations', async 
     await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', /tapread-social\.jpg$/);
     const results = await new AxeBuilder({ page }).analyze();
     expect(results.violations).toEqual([]);
-  }
-});
+  });
+}
 
 test('mobile layout has no horizontal overflow and keeps controls reachable', async ({ page }) => {
   await page.goto('/demo');

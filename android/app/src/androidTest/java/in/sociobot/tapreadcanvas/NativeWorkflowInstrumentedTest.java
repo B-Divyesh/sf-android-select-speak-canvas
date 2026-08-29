@@ -14,19 +14,11 @@ import android.graphics.RectF;
 import android.Manifest;
 import android.content.pm.ApplicationInfo;
 import android.view.View;
+import android.widget.TextView;
 
 import androidx.test.core.app.ActivityScenario;
-import androidx.test.espresso.Espresso;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
-
-import static androidx.test.espresso.action.ViewActions.click;
-import static androidx.test.espresso.assertion.ViewAssertions.matches;
-import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
-import static androidx.test.espresso.matcher.ViewMatchers.withContentDescription;
-import static androidx.test.espresso.matcher.ViewMatchers.withId;
-import static androidx.test.espresso.matcher.ViewMatchers.withText;
-import static org.hamcrest.Matchers.containsString;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -69,7 +61,7 @@ public final class NativeWorkflowInstrumentedTest {
 
     @Test public void bundledNativeSampleRecognizesAndRepeatsExactText() throws Exception {
         try (ActivityScenario<SampleScreenActivity> scenario = ActivityScenario.launch(SampleScreenActivity.class)) {
-            Espresso.onView(withContentDescription("Load sample screen")).perform(click());
+            scenario.onActivity(activity -> activity.findViewById(SampleScreenActivity.LOAD_BUTTON_ID).performClick());
             long deadline = System.currentTimeMillis() + 20_000;
             String value = "";
             while (System.currentTimeMillis() < deadline) {
@@ -84,10 +76,12 @@ public final class NativeWorkflowInstrumentedTest {
             }
             assertTrue("Recognized exact sample words: " + value,
                     value.toLowerCase().contains("north gate") && value.toLowerCase().contains("opens at dawn"));
-            Espresso.onView(withText("Hear sample")).check(matches(isDisplayed())).perform(click());
-            Espresso.onView(withId(android.R.id.message)).check(matches(withText(containsString("Speaking:"))));
-            Espresso.onView(withText("Repeat last reading")).check(matches(isDisplayed())).perform(click());
-            Espresso.onView(withId(android.R.id.message)).check(matches(withText(containsString("The north gate"))));
+            scenario.onActivity(activity -> {
+                assertTrue(activity.findViewById(SampleScreenActivity.HEAR_BUTTON_ID).performClick());
+                assertTrue(((TextView) activity.findViewById(android.R.id.message)).getText().toString().contains("Speaking:"));
+                assertTrue(activity.findViewById(SampleScreenActivity.REPEAT_BUTTON_ID).performClick());
+                assertTrue(((TextView) activity.findViewById(android.R.id.message)).getText().toString().contains("The north gate"));
+            });
         }
     }
 }
