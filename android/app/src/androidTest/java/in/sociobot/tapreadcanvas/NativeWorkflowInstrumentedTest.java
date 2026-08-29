@@ -11,9 +11,22 @@ import android.content.pm.ServiceInfo;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.RectF;
+import android.Manifest;
+import android.content.pm.ApplicationInfo;
+import android.view.View;
 
+import androidx.test.core.app.ActivityScenario;
+import androidx.test.espresso.Espresso;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
+
+import static androidx.test.espresso.action.ViewActions.click;
+import static androidx.test.espresso.assertion.ViewAssertions.matches;
+import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
+import static androidx.test.espresso.matcher.ViewMatchers.withContentDescription;
+import static androidx.test.espresso.matcher.ViewMatchers.withId;
+import static androidx.test.espresso.matcher.ViewMatchers.withText;
+import static org.hamcrest.Matchers.containsString;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -27,6 +40,7 @@ public final class NativeWorkflowInstrumentedTest {
                 new ComponentName(context, TapReadAccessibilityService.class), PackageManager.GET_META_DATA);
         assertEquals("android.permission.BIND_ACCESSIBILITY_SERVICE", info.permission);
         assertTrue(info.metaData.containsKey("android.accessibilityservice"));
+        assertTrue(info.exported);
     }
 
     @Test public void lastFrameRestoresWithinCurrentScreenBounds() {
@@ -43,5 +57,37 @@ public final class NativeWorkflowInstrumentedTest {
         visible.eraseColor(Color.WHITE);
         assertTrue(ScreenSafety.isLikelyProtectedBlank(blank));
         assertFalse(ScreenSafety.isLikelyProtectedBlank(visible));
+    }
+
+    @Test public void backupAndNetworkCapabilitiesAreDisabled() throws Exception {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        ApplicationInfo info = context.getPackageManager().getApplicationInfo(context.getPackageName(), 0);
+        assertEquals(0, info.flags & ApplicationInfo.FLAG_ALLOW_BACKUP);
+        assertEquals(PackageManager.PERMISSION_DENIED,
+                context.getPackageManager().checkPermission(Manifest.permission.INTERNET, context.getPackageName()));
+    }
+
+    @Test public void bundledNativeSampleRecognizesAndRepeatsExactText() throws Exception {
+        try (ActivityScenario<SampleScreenActivity> scenario = ActivityScenario.launch(SampleScreenActivity.class)) {
+            Espresso.onView(withContentDescription("Load sample screen")).perform(click());
+            long deadline = System.currentTimeMillis() + 20_000;
+            String value = "";
+            while (System.currentTimeMillis() < deadline) {
+                final String[] current = {""};
+                scenario.onActivity(activity -> {
+                    View status = activity.findViewById(android.R.id.message);
+                    if (status instanceof android.widget.TextView) current[0] = ((android.widget.TextView) status).getText().toString();
+                });
+                value = current[0];
+                if (value.toLowerCase().contains("north gate") && value.toLowerCase().contains("opens at dawn")) break;
+                Thread.sleep(200);
+            }
+            assertTrue("Recognized exact sample words: " + value,
+                    value.toLowerCase().contains("north gate") && value.toLowerCase().contains("opens at dawn"));
+            Espresso.onView(withText("Hear sample")).check(matches(isDisplayed())).perform(click());
+            Espresso.onView(withId(android.R.id.message)).check(matches(withText(containsString("Speaking:"))));
+            Espresso.onView(withText("Repeat last reading")).check(matches(isDisplayed())).perform(click());
+            Espresso.onView(withId(android.R.id.message)).check(matches(withText(containsString("The north gate"))));
+        }
     }
 }

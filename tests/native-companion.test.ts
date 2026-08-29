@@ -1,38 +1,30 @@
 import { readFile } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 
 const read = (path: string) => readFile(new URL(path, import.meta.url), 'utf8');
 
 describe('native Android companion regression contract', () => {
-  it('@claim:android-private-capture uses a visible service, consent, on-device recognition, and device speech', async () => {
-    const manifest = await read('../android/app/src/main/AndroidManifest.xml');
-    const metadata = await read('../android/app/src/main/res/xml/tapread_accessibility_service.xml');
-    const service = await read('../android/app/src/main/java/in/sociobot/tapreadcanvas/TapReadAccessibilityService.java');
-    const consent = await read('../android/app/src/main/java/in/sociobot/tapreadcanvas/CaptureConsentActivity.java');
-
-    expect(manifest).toMatch(/TapReadAccessibilityService/);
-    expect(manifest).toMatch(/android\.permission\.BIND_ACCESSIBILITY_SERVICE/);
-    expect(manifest).toMatch(/foregroundServiceType="mediaProjection"/);
-    expect(metadata).toMatch(/canRetrieveWindowContent="false"/);
-    expect(consent).toMatch(/createScreenCaptureIntent/);
-    expect(service).toMatch(/TYPE_ACCESSIBILITY_OVERLAY/);
-    expect(service).toMatch(/getMediaProjection/);
-    expect(service).toMatch(/ImageReader\.newInstance/);
-    expect(service).toMatch(/TextRecognition\.getClient/);
-    expect(service).toMatch(/InputImage\.fromBitmap/);
-    expect(service).toMatch(/new TextToSpeech/);
+  const runClaim = (claim: string) => execFileSync('bash', ['scripts/test-android.sh', claim], {
+    cwd: new URL('..', import.meta.url),
+    encoding: 'utf8',
+    env: { ...process.env, ANDROID_HOME: process.env.ANDROID_HOME || '/opt/android-sdk', JAVA_HOME: process.env.JAVA_HOME || '/usr/lib/jvm/java-21-openjdk-amd64' },
   });
 
-  it('@claim:android-selection-memory stores the last selection and reading for repeat', async () => {
-    const service = await read('../android/app/src/main/java/in/sociobot/tapreadcanvas/TapReadAccessibilityService.java');
-    expect(service).toMatch(/putString\("last_text"/);
-    expect(service).toMatch(/getString\("last_text"/);
-    expect(service).toMatch(/RegionMemory/);
+  it('@claim:android-private-capture builds the target-35 app and runs native reading outcomes', () => {
+    expect(runClaim('android-private-capture')).toContain('BUILD SUCCESSFUL');
   });
 
-  it('@claim:protected-captures refuses likely protected blank captures', async () => {
-    const safety = await read('../android/app/src/main/java/in/sociobot/tapreadcanvas/ScreenSafety.java');
-    expect(safety).toMatch(/isLikelyProtectedBlank/);
+  it('@claim:android-selection-memory saves and repeats the exact native reading', () => {
+    expect(runClaim('android-selection-memory')).toContain('BUILD SUCCESSFUL');
+  });
+
+  it('@claim:protected-captures rejects blank recognition output', () => {
+    expect(runClaim('protected-captures')).toContain('BUILD SUCCESSFUL');
+  });
+
+  it('@claim:android-device-privacy packages with backup and network access disabled', () => {
+    expect(runClaim('android-device-privacy')).toContain('BUILD SUCCESSFUL');
   });
 });
 

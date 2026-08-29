@@ -1,1 +1,1 @@
-Hear selected text from Android screens or saved images without sending it to a server.
+Hear selected Android screen or image text aloud without sending it off-device.

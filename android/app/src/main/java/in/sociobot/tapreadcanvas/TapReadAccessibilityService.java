@@ -22,6 +22,7 @@ import android.os.Looper;
 import android.speech.tts.TextToSpeech;
 import android.view.Gravity;
 import android.view.WindowManager;
+import android.view.accessibility.AccessibilityEvent;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -57,10 +58,23 @@ public final class TapReadAccessibilityService extends AccessibilityService {
     private TextRecognizer recognizer;
     private final Handler main = new Handler(Looper.getMainLooper());
     private SharedPreferences saved;
+    private NativeReadingSession readingSession;
+    private MediaProjection activeProjection;
+    private MediaProjection.Callback projectionCallback;
+    private ImageReader activeReader;
+    private VirtualDisplay activeDisplay;
+
+    @Override public void onAccessibilityEvent(AccessibilityEvent event) {
+        // TapRead deliberately does not consume accessibility events or node data.
+    }
 
     @Override public void onServiceConnected() {
         super.onServiceConnected();
         saved = getSharedPreferences("tapread_native", MODE_PRIVATE);
+        readingSession = new NativeReadingSession(new NativeReadingSession.Store() {
+            @Override public void save(String text) { saved.edit().putString("last_text", text).apply(); }
+            @Override public String load() { return saved.getString("last_text", ""); }
+        }, TapReadAccessibilityService.this::speak);
         windows = (WindowManager) getSystemService(WINDOW_SERVICE);
         recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
         tts = new TextToSpeech(this, status -> { if (status == TextToSpeech.SUCCESS) tts.setLanguage(Locale.getDefault()); });
@@ -111,24 +125,29 @@ public final class TapReadAccessibilityService extends AccessibilityService {
         MediaProjection projection = ((android.media.projection.MediaProjectionManager) getSystemService(Context.MEDIA_PROJECTION_SERVICE))
                 .getMediaProjection(resultCode, resultData);
         if (projection == null) { announce("Android did not provide a screen to read."); stopForeground(true); return; }
+        activeProjection = projection;
+        projectionCallback = new MediaProjection.Callback() {
+            @Override public void onStop() {
+                main.post(() -> releaseCaptureResources(false, true));
+            }
+        };
+        projection.registerCallback(projectionCallback, main);
         android.util.DisplayMetrics metrics = getResources().getDisplayMetrics();
         int width = metrics.widthPixels;
         int height = metrics.heightPixels;
-        ImageReader reader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2);
-        VirtualDisplay display = projection.createVirtualDisplay("TapRead selected screen", width, height, metrics.densityDpi,
-                DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, reader.getSurface(), null, main);
-        reader.setOnImageAvailableListener(source -> {
+        activeReader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2);
+        activeDisplay = projection.createVirtualDisplay("TapRead selected screen", width, height, metrics.densityDpi,
+                DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, activeReader.getSurface(), null, main);
+        activeReader.setOnImageAvailableListener(source -> {
             Image image = source.acquireLatestImage();
             if (image == null) return;
             Bitmap bitmap = bitmapFrom(image, width, height);
             image.close();
-            source.setOnImageAvailableListener(null, null);
-            source.close();
-            display.release();
-            projection.stop();
-            stopForeground(true);
+            releaseFrameReader();
             if (ScreenSafety.isLikelyProtectedBlank(bitmap)) {
                 announce("This screen is protected or blank. TapRead will not bypass Android or DRM capture protections.");
+                bitmap.recycle();
+                stopProjection();
                 return;
             }
             capturedScreen = bitmap;
@@ -160,7 +179,7 @@ public final class TapReadAccessibilityService extends AccessibilityService {
         actions.setOrientation(LinearLayout.HORIZONTAL);
         actions.setPadding(16, 16, 16, 32);
         actions.setBackgroundColor(0xee192421);
-        Button cancel = actionButton("Cancel", v -> removeSelection());
+        Button cancel = actionButton("Cancel", v -> stopProjection());
         Button read = actionButton("Read selection", v -> readSelection());
         Button repeat = actionButton("Repeat last", v -> repeatLast());
         actions.addView(cancel, new LinearLayout.LayoutParams(0, 56, 1));
@@ -199,15 +218,18 @@ public final class TapReadAccessibilityService extends AccessibilityService {
                 .addOnSuccessListener(result -> {
                     String text = result.getText().trim();
                     if (text.isEmpty()) { announce("No text was found. Draw a tighter selection and try again."); return; }
-                    saved.edit().putString("last_text", text).apply();
-                    speak(text);
+                    readingSession.acceptRecognition(text);
                 })
-                .addOnFailureListener(error -> announce("TapRead could not read that selection. Try a clearer image."));
+                .addOnFailureListener(error -> announce("TapRead could not read that selection. Try a clearer image."))
+                .addOnCompleteListener(task -> {
+                    region.recycle();
+                    stopProjection();
+                });
     }
 
     private void repeatLast() {
-        String text = saved.getString("last_text", "");
-        if (text.isEmpty()) announce("There is no previous reading yet."); else { removeSelection(); speak(text); }
+        stopProjection();
+        if (readingSession.repeat().isEmpty()) announce("There is no previous reading yet.");
     }
 
     private void speak(String text) {
@@ -223,6 +245,36 @@ public final class TapReadAccessibilityService extends AccessibilityService {
             selectionRoot = null;
             selectionView = null;
         }
+    }
+
+    private void releaseFrameReader() {
+        if (activeReader != null) {
+            activeReader.setOnImageAvailableListener(null, null);
+            activeReader.close();
+            activeReader = null;
+        }
+        if (activeDisplay != null) {
+            activeDisplay.release();
+            activeDisplay = null;
+        }
+    }
+
+    private void stopProjection() {
+        releaseCaptureResources(true, false);
+    }
+
+    private void releaseCaptureResources(boolean stopProjection, boolean revokedBySystem) {
+        releaseFrameReader();
+        removeSelection();
+        if (capturedScreen != null) { capturedScreen.recycle(); capturedScreen = null; }
+        MediaProjection projection = activeProjection;
+        MediaProjection.Callback callback = projectionCallback;
+        activeProjection = null;
+        projectionCallback = null;
+        if (projection != null && callback != null) projection.unregisterCallback(callback);
+        if (stopProjection && projection != null) projection.stop();
+        stopForeground(true);
+        if (revokedBySystem) announce("Screen sharing stopped. Tap TapRead for a new capture.");
     }
 
     private void announce(String message) { main.post(() -> android.widget.Toast.makeText(this, message, android.widget.Toast.LENGTH_LONG).show()); }
@@ -249,7 +301,7 @@ public final class TapReadAccessibilityService extends AccessibilityService {
     @Override public void onInterrupt() { if (tts != null) tts.stop(); }
 
     @Override public void onDestroy() {
-        removeSelection();
+        releaseCaptureResources(true, false);
         if (trigger != null) { try { windows.removeView(trigger); } catch (IllegalArgumentException ignored) { } trigger = null; }
         if (tts != null) { tts.shutdown(); tts = null; }
         if (recognizer != null) { recognizer.close(); recognizer = null; }

@@ -77,7 +77,11 @@ live in `public/assets/`. Generated imagery is disclosed in the site footer.
 The 1200×630 social preview in `public/assets/tapread-social.jpg` is a centre
 crop of that original scene. The 180px touch icon is derived from the
 hand-authored brand mark. No new stock or third-party artwork was added during
-polish round 1.
+either polish round.
+
+The round-2 Android walkthrough uses four hand-authored CSS instrument panels,
+not stock device mockups. Their cream, dial-green, brass, and signal-orange
+surfaces extend the same physical-instrument language into the native flow.
 
 ## Demo treatment
 

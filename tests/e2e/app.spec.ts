@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
+import sharp from 'sharp';
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
@@ -10,7 +11,7 @@ test.beforeEach(async ({ page }) => {
       constructor(text: string) { this.text = text; }
     }
     Object.defineProperty(window, 'SpeechSynthesisUtterance', { value: MockUtterance });
-    Object.defineProperty(window, 'speechSynthesis', { value: { cancel() {}, speak(utterance: MockUtterance) { Object.assign(window, { __tapreadSpoken: utterance.text }); utterance.onstart?.(); setTimeout(() => utterance.onend?.(), 10); } }});
+    Object.defineProperty(window, 'speechSynthesis', { value: { cancel() { const state = window as unknown as { __tapreadCancelled?: number }; state.__tapreadCancelled = (state.__tapreadCancelled ?? 0) + 1; }, speak(utterance: MockUtterance) { const state = window as unknown as { __tapreadSpoken?: string; __tapreadSpeechLog?: string[] }; state.__tapreadSpoken = utterance.text; state.__tapreadSpeechLog = [...(state.__tapreadSpeechLog ?? []), utterance.text]; utterance.onstart?.(); setTimeout(() => utterance.onend?.(), 2_000); } }});
   });
 });
 
@@ -29,6 +30,7 @@ test('first screen states the job and offers a working sample', async ({ page })
 
 test('@claim:demo-isolation one click opens seeded isolated demo and reset affects only demo', async ({ page }) => {
   await page.goto('/');
+  await page.evaluate(() => localStorage.setItem('tapread-theme', 'light'));
   await page.evaluate(async () => {
     await new Promise<void>((resolve, reject) => {
       const open = indexedDB.open('tapread-canvas', 1);
@@ -45,14 +47,18 @@ test('@claim:demo-isolation one click opens seeded isolated demo and reset affec
   await expect(page).toHaveURL(/\/demo$/);
   await expect(page.getByText('Demo — sample data, nothing is saved')).toBeVisible();
   await expect(page.locator('#recognizedText')).toHaveValue('The north gate opens at dawn.');
+  await page.getByRole('button', { name: 'Use dark theme' }).click();
+  expect(await page.evaluate(() => ({ normal: localStorage.getItem('tapread-theme'), demo: localStorage.getItem('demo:tapread-theme') }))).toEqual({ normal: 'light', demo: 'dark' });
   await page.locator('#recognizedText').fill('CHANGED DEMO TEXT');
   await page.getByRole('button', { name: 'Reset demo' }).click();
   await expect(page.locator('#recognizedText')).toHaveValue('The north gate opens at dawn.');
+  expect(await page.evaluate(() => ({ normal: localStorage.getItem('tapread-theme'), demo: localStorage.getItem('demo:tapread-theme') }))).toEqual({ normal: 'light', demo: null });
   await page.getByRole('link', { name: 'Start for real' }).click();
   await expect(page.locator('#recognizedText')).toHaveValue('REAL PRIVATE TEXT');
   const databases = await page.evaluate(async () => (await indexedDB.databases()).map((item) => item.name));
   expect(databases).toContain('tapread-canvas');
   expect(databases).not.toContain('demo:tapread-canvas');
+  expect(await page.evaluate(() => localStorage.getItem('tapread-theme'))).toBe('light');
   await page.goto('/?demo=1');
   await expect(page.getByText('Demo — sample data, nothing is saved')).toBeVisible();
   await expect(page.locator('#recognizedText')).toHaveValue('The north gate opens at dawn.');
@@ -74,6 +80,28 @@ test('@claim:device-speech speaks user-corrected text with the browser voice', a
   await page.locator('#recognizedText').fill('Corrected words to speak');
   await page.getByRole('button', { name: 'Speak edited text' }).click();
   await expect.poll(() => page.evaluate(() => (window as unknown as { __tapreadSpoken?: string }).__tapreadSpoken)).toBe('Corrected words to speak');
+});
+
+test('@claim:speech-stop cancels active speech and keeps the text', async ({ page }) => {
+  await page.goto('/demo');
+  await expect(page.locator('#statusTitle')).toHaveText('Sample ready');
+  await page.locator('#recognizedText').fill('Stop this reading');
+  const before = await page.evaluate(() => (window as unknown as { __tapreadCancelled?: number }).__tapreadCancelled ?? 0);
+  await page.getByRole('button', { name: 'Speak edited text' }).click();
+  await expect(page.getByRole('button', { name: 'Stop speech' })).toBeEnabled();
+  await page.getByRole('button', { name: 'Stop speech' }).click();
+  await expect(page.locator('#statusTitle')).toHaveText('Speech stopped');
+  await expect(page.locator('#recognizedText')).toHaveValue('Stop this reading');
+  expect(await page.evaluate(() => (window as unknown as { __tapreadCancelled?: number }).__tapreadCancelled ?? 0)).toBeGreaterThan(before);
+});
+
+test('@claim:repeat-reading replays the exact latest recognized text', async ({ page }) => {
+  await page.goto('/demo');
+  await expect(page.locator('#statusTitle')).toHaveText('Sample ready');
+  await page.locator('#recognizedText').fill('Repeat this exact reading');
+  await page.getByRole('button', { name: 'Speak edited text' }).click();
+  await page.getByRole('button', { name: 'Repeat last reading' }).click();
+  await expect.poll(() => page.evaluate(() => (window as unknown as { __tapreadSpeechLog?: string[] }).__tapreadSpeechLog ?? [])).toEqual(['Repeat this exact reading', 'Repeat this exact reading']);
 });
 
 test('@claim:web-local-processing demo flow sends no cross-origin requests', async ({ page }, testInfo) => {
@@ -129,6 +157,24 @@ test('@claim:image-size-limit accepts a valid 20 MB image and rejects one extra 
   await expect(page.locator('#statusTitle')).toHaveText('Image is larger than 20 MB');
 });
 
+test('@claim:supported-image-formats opens PNG, JPEG, WebP, and GIF images', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'Run format decoding once.');
+  await page.goto('/demo');
+  await expect(page.locator('#statusTitle')).toHaveText('Sample ready');
+  const base = sharp({ create: { width: 48, height: 32, channels: 3, background: '#f2e7ce' } });
+  const fixtures = [
+    ['sample.png', 'image/png', await base.clone().png().toBuffer()],
+    ['sample.jpg', 'image/jpeg', await base.clone().jpeg().toBuffer()],
+    ['sample.webp', 'image/webp', await base.clone().webp().toBuffer()],
+    ['sample.gif', 'image/gif', await base.clone().gif().toBuffer()],
+  ] as const;
+  for (const [name, mimeType, buffer] of fixtures) {
+    await page.locator('#imageInput').setInputFiles({ name, mimeType, buffer });
+    await expect(page.locator('#statusTitle')).toHaveText('Image ready');
+    await expect(page.getByLabel('Loaded image with movable text selection')).toBeVisible();
+  }
+});
+
 test('@claim:data-portability exports and imports reader data', async ({ page }) => {
   await page.goto('/demo');
   await expect(page.locator('#statusTitle')).toHaveText('Sample ready');
@@ -140,9 +186,30 @@ test('@claim:data-portability exports and imports reader data', async ({ page })
   const stream = await download.createReadStream();
   const chunks: Buffer[] = [];
   for await (const chunk of stream) chunks.push(Buffer.from(chunk));
-  expect(JSON.parse(Buffer.concat(chunks).toString()).state.text).toBe('Exported sample passage');
-  await page.locator('#importInput').setInputFiles({ name: 'reader-data.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ version: 1, state: { text: 'Imported passage', rate: 1.2, updatedAt: 1 }, history: [] })) });
+  const exported = JSON.parse(Buffer.concat(chunks).toString()).state;
+  expect(exported.text).toBe('Exported sample passage');
+  expect(exported.rate).toBe(1);
+  expect(exported.selection).toMatchObject({ x: expect.any(Number), y: expect.any(Number), width: expect.any(Number), height: expect.any(Number) });
+  await page.locator('#importInput').setInputFiles({ name: 'reader-data.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ version: 1, state: { text: 'Imported passage', rate: 1.2, selection: { x: .2, y: .2, width: .5, height: .4 }, updatedAt: 1 }, history: [] })) });
   await expect(page.locator('#recognizedText')).toHaveValue('Imported passage');
+  await expect(page.locator('#rateInput')).toHaveValue('1.2');
+  await expect(page.locator('#selectionDescription')).toContainText('50% wide by 40% high');
+});
+
+test('@claim:reader-state-persistence restores image, selection, text, and speed', async ({ page }) => {
+  await page.goto('/demo');
+  const canvas = page.getByLabel('Loaded image with movable text selection');
+  await canvas.focus();
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('Shift+ArrowDown');
+  const selection = await page.locator('#selectionDescription').textContent();
+  await page.locator('#recognizedText').fill('Saved exact passage');
+  await page.locator('#rateInput').fill('1.4');
+  await page.reload();
+  await expect(canvas).toBeVisible();
+  await expect(page.locator('#selectionDescription')).toHaveText(selection ?? '');
+  await expect(page.locator('#recognizedText')).toHaveValue('Saved exact passage');
+  await expect(page.locator('#rateInput')).toHaveValue('1.4');
 });
 
 test('@claim:offline-reload keeps the demo available after installation', async ({ page, context }) => {
@@ -161,18 +228,49 @@ test('@claim:keyboard-selection moves and resizes the selection with the keyboar
   const canvas = page.getByLabel('Loaded image with movable text selection');
   const before = await page.locator('#selectionDescription').textContent();
   await canvas.focus();
+  await page.keyboard.press('ArrowRight');
+  const moved = await page.locator('#selectionDescription').textContent();
+  expect(moved).not.toBe(before);
   await page.keyboard.press('Shift+ArrowRight');
-  await expect(page.locator('#selectionDescription')).not.toHaveText(before ?? '');
+  await expect(page.locator('#selectionDescription')).not.toHaveText(moved ?? '');
+});
+
+test('@claim:pointer-selection changes the selection with a pointer drag', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'Pointer claim runs in the mouse project.');
+  await page.goto('/demo');
+  const canvas = page.getByLabel('Loaded image with movable text selection');
+  await canvas.scrollIntoViewIfNeeded();
+  const box = await canvas.boundingBox();
+  if (!box) throw new Error('Canvas has no box');
+  await page.mouse.move(box.x + 20, box.y + 20);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * .55, box.y + box.height * .55);
+  await page.mouse.up();
+  await expect(page.locator('#selectionDescription')).not.toContainText('80% wide');
+});
+
+test('@claim:touch-selection changes the selection with a touch drag', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'Touch claim runs on the phone project.');
+  await page.goto('/demo');
+  const canvas = page.getByLabel('Loaded image with movable text selection');
+  const box = await canvas.boundingBox();
+  if (!box) throw new Error('Canvas has no box');
+  await canvas.dispatchEvent('pointerdown', { pointerId: 7, pointerType: 'touch', clientX: box.x + 15, clientY: box.y + 15 });
+  await canvas.dispatchEvent('pointermove', { pointerId: 7, pointerType: 'touch', clientX: box.x + box.width * .6, clientY: box.y + box.height * .6 });
+  await canvas.dispatchEvent('pointerup', { pointerId: 7, pointerType: 'touch', clientX: box.x + box.width * .6, clientY: box.y + box.height * .6 });
+  await expect(page.locator('#selectionDescription')).toContainText('55% wide');
 });
 
 test('routes set titles, metadata, focus, history, and a designed 404', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('link', { name: 'Privacy', exact: true }).first().click();
+  await page.locator('.policy-link').scrollIntoViewIfNeeded();
+  const beforeScroll = await page.evaluate(() => scrollY);
+  await page.locator('.policy-link').click();
   await expect(page).toHaveTitle('Privacy — TapRead Canvas');
   await expect(page.getByRole('heading', { level: 1, name: 'Privacy' })).toBeFocused();
   await page.goBack();
   await expect(page).toHaveTitle('TapRead Canvas — hear selected image text');
-  await expect(page.getByRole('heading', { level: 1 })).toBeFocused();
+  await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThanOrEqual(beforeScroll - 2);
   await page.goto('/terms');
   await expect(page).toHaveTitle('Terms — TapRead Canvas');
   await page.goto('/does-not-exist');
@@ -199,4 +297,20 @@ test('mobile layout has no horizontal overflow and keeps controls reachable', as
   await expect(page.getByRole('button', { name: 'Reset demo' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Start for real' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Privacy', exact: true }).first()).toBeVisible();
+  const undersized = await page.locator('a, button, input[type="range"], label.file-button, label.button').evaluateAll((nodes) => nodes.filter((node) => (node as HTMLElement).offsetParent !== null && !node.classList.contains('hidden')).map((node) => ({ name: (node.textContent || node.getAttribute('aria-label') || '').trim(), box: node.getBoundingClientRect().toJSON() })).filter(({ box }) => box.width < 44 || box.height < 44));
+  expect(undersized).toEqual([]);
+});
+
+test('public version matches package and Android metadata', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('.build-note')).toContainText(/v1\.0\.0 · [0-9a-f]{7}/);
+  await expect(page.locator('#androidDownload')).toHaveAttribute('href', /releases\/download\/v1\.0\.0\/tapread-canvas-1\.0\.0\.apk$/);
+});
+
+test('@claim:android-install published Android APK is downloadable', async ({ request }) => {
+  const response = await request.get('https://github.com/B-Divyesh/sf-android-select-speak-canvas/releases/download/v1.0.0/tapread-canvas-1.0.0.apk');
+  expect(response.ok()).toBe(true);
+  const body = await response.body();
+  expect(body.subarray(0, 2).toString()).toBe('PK');
+  expect(body.length).toBeGreaterThan(1_000_000);
 });

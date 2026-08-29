@@ -21,6 +21,7 @@ export function currentStorageNamespace(): string {
 }
 
 export function resetDemoStorage(): Promise<void> {
+  localStorage.removeItem('demo:tapread-theme');
   return new Promise((resolve, reject) => {
     const request = indexedDB.deleteDatabase('demo:tapread-canvas');
     request.onsuccess = () => resolve();
