@@ -18,8 +18,9 @@ Date: 29 August 2026
 - `npm run build` passed and produced `dist/`. Main JS: 30.99 kB (11.01 kB gzip);
   CSS: 14.84 kB (4.46 kB gzip).
 - `ANDROID_HOME=/opt/android-sdk JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 bash scripts/test-android.sh all` passed compilation, JVM unit tests, debug APK, and instrumentation APK.
-- `npm test` passed: 9 tests. `npm run test:e2e` passed: 39 tests with 11
-  intentional cross-device duplicates skipped. It covers speech stop/repeat,
+- Fresh clone at `e2fa2ed`: `npm ci` completed with 0 vulnerabilities; `npm test`
+  passed 9 tests; `npm run build` passed; `npm run test:e2e` passed 39 tests with
+  11 intentional cross-device duplicates skipped. It covers speech stop/repeat,
   exact 20 MiB boundary, keyboard/touch selection, image formats, demo isolation,
   offline reload, routing, and Axe scans.
 - The Android release URL returned a 54.6 MB APK with SHA-256
@@ -28,9 +29,10 @@ Date: 29 August 2026
 ## Evidence and deployment
 
 Pre-deploy live screenshots, HTML checks, and headers are in
-`evidence/polish-2/live/`. Push the repair commit through the static deployment,
-then cold-check `/`, `/demo`, `/privacy`, `/terms`, and an unknown URL before
-handing off.
+`evidence/polish-2/live/`. Both repair commits (`fa15687`, `e2fa2ed`) are pushed
+to `origin/main`. The public URL still served the preceding `index-BL4CkKbn.js`
+bundle at 03:20 UTC, so its deployment controller must pick up the pushed static
+build before a final cold live check can be recorded.
 
 ## Environment note
 
