@@ -18,9 +18,10 @@ Date: 29 August 2026
 - `npm run build` passed and produced `dist/`. Main JS: 30.99 kB (11.01 kB gzip);
   CSS: 14.84 kB (4.46 kB gzip).
 - `ANDROID_HOME=/opt/android-sdk JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 bash scripts/test-android.sh all` passed compilation, JVM unit tests, debug APK, and instrumentation APK.
-- Focused browser claim evidence passed for speech stop/repeat, exact 20 MiB boundary,
-  keyboard/touch selection, image formats, demo isolation, offline reload, routing,
-  and Axe scans.
+- `npm test` passed: 9 tests. `npm run test:e2e` passed: 39 tests with 11
+  intentional cross-device duplicates skipped. It covers speech stop/repeat,
+  exact 20 MiB boundary, keyboard/touch selection, image formats, demo isolation,
+  offline reload, routing, and Axe scans.
 - The Android release URL returned a 54.6 MB APK with SHA-256
   `72e874c9df0ecae371e444100af2f78b348cc408ba88f56a236655e4efe89d8d`.
 
