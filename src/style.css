@@ -183,6 +183,8 @@ h3 { font-size: 1.25rem; }
 .hero-copy > p:not(.eyebrow) { max-width: 59ch; font-size: 1.2rem; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
 .hero-actions > span { align-self: center; max-width: 25ch; color: var(--muted); font-size: .95rem; }
+.hero-actions .apk-note { max-width: 38ch; font: 600 .78rem/1.35 var(--mono); }
+.apk-note code { overflow-wrap: anywhere; }
 .fact-list { display: flex; flex-wrap: wrap; gap: 8px 24px; padding: 0; margin: 24px 0 0; list-style: none; color: var(--muted); font-size: .95rem; }
 .fact-list li::before { content: "◆"; margin-right: 8px; color: var(--brass); font-size: .65em; }
 .demo-ready { padding-left: 14px; border-left: 4px solid var(--accent); }

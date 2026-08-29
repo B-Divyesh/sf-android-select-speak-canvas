@@ -75,7 +75,7 @@ ANDROID_HOME=/opt/android-sdk android/gradlew -p android test assembleDebug
 ```
 
 Install the [v1.0.0 APK](https://github.com/B-Divyesh/sf-android-select-speak-canvas/releases/download/v1.0.0/tapread-canvas-1.0.0.apk).
-Compare its SHA-256 with the value in the release notes before installing it.
+Its SHA-256 is `72e874c9df0ecae371e444100af2f78b348cc408ba88f56a236655e4efe89d8d`.
 
 On Android, enable TapRead in Accessibility settings.
 Tap the floating TapRead button.

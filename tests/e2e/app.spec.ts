@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
+import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import sharp from 'sharp';
 
@@ -307,10 +308,12 @@ test('public version matches package and Android metadata', async ({ page }) => 
   await expect(page.locator('#androidDownload')).toHaveAttribute('href', /releases\/download\/v1\.0\.0\/tapread-canvas-1\.0\.0\.apk$/);
 });
 
-test('@claim:android-install published Android APK is downloadable', async ({ request }) => {
+test('@claim:android-install published Android APK is downloadable', async ({ request }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'Verify the 54 MB release once.');
   const response = await request.get('https://github.com/B-Divyesh/sf-android-select-speak-canvas/releases/download/v1.0.0/tapread-canvas-1.0.0.apk');
   expect(response.ok()).toBe(true);
   const body = await response.body();
   expect(body.subarray(0, 2).toString()).toBe('PK');
   expect(body.length).toBeGreaterThan(1_000_000);
+  expect(createHash('sha256').update(body).digest('hex')).toBe('72e874c9df0ecae371e444100af2f78b348cc408ba88f56a236655e4efe89d8d');
 });
