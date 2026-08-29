@@ -232,7 +232,7 @@ test('@claim:keyboard-selection moves and resizes the selection with the keyboar
   await page.keyboard.press('ArrowRight');
   const moved = await page.locator('#selectionDescription').textContent();
   expect(moved).not.toBe(before);
-  await page.keyboard.press('Shift+ArrowRight');
+  await page.keyboard.press('Shift+ArrowLeft');
   await expect(page.locator('#selectionDescription')).not.toHaveText(moved ?? '');
 });
 

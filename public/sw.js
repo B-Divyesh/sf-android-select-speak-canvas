@@ -1,4 +1,4 @@
-const VERSION = 'tapread-v1';
+const VERSION = 'tapread-v2';
 const SHELL = `${VERSION}-shell`;
 const RUNTIME = `${VERSION}-runtime`;
 const PRECACHE = [
