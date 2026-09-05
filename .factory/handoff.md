@@ -1,41 +1,59 @@
-# TapRead Canvas — polish round 2 handoff
+# TapRead Canvas — verification 3 handoff
 
-Date: 29 August 2026
+Date: 5 September 2026
 
-## Completed
+## Verdict
 
-- Closed every review-1 and review-2 finding; the item-by-item map is in
-  `.factory/polish-2.md`.
-- Delivered an isolated one-click `/demo` and `?demo=1` path with reset, exit,
-  dedicated IndexedDB/localStorage namespaces, native sample path, and Android walkthrough.
-- Corrected Android service export, MediaProjection callback cleanup, backup and
-  network policy, native copy, install path, history restoration, mobile targets,
-  metadata/404/focus behavior, copy consistency, version display, and speech
-  cancellation races.
+**FAIL — 6 findings, including 3 untested public claims.**
 
-## Verification
+The full report is `.factory/verification-3.md`.
 
-- `npm run build` passed and produced `dist/`. Main JS: 30.99 kB (11.01 kB gzip);
-  CSS: 14.84 kB (4.46 kB gzip).
-- `ANDROID_HOME=/opt/android-sdk JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 bash scripts/test-android.sh all` passed compilation, JVM unit tests, debug APK, and instrumentation APK.
-- Fresh clone at `e2fa2ed`: `npm ci` completed with 0 vulnerabilities; `npm test`
-  passed 9 tests; `npm run build` passed; `npm run test:e2e` passed 39 tests with
-  11 intentional cross-device duplicates skipped. It covers speech stop/repeat,
-  exact 20 MiB boundary, keyboard/touch selection, image formats, demo isolation,
-  offline reload, routing, and Axe scans.
-- The Android release URL returned a 54.6 MB APK with SHA-256
-  `72e874c9df0ecae371e444100af2f78b348cc408ba88f56a236655e4efe89d8d`.
+## Candidate and live state
 
-## Evidence and deployment
+- Last product-code commit reviewed: `fa15687d1c43d1fe2310231dbc608c658e131923`.
+- Documentation/test head reviewed: `1e06e64058cd32e8f4660543f24f83eb86bd7756`.
+- The live static deployment now matches a clean build of `1e06e64`
+  byte-for-byte for the shell, application bundles, service worker, manifest,
+  OCR worker/model, and fonts. The earlier pre-deploy note is no longer true.
+- No product code was modified during verification.
 
-Pre-deploy live screenshots, HTML checks, and headers are in
-`evidence/polish-2/live/`. Both repair commits (`fa15687`, `e2fa2ed`) are pushed
-to `origin/main`. The public URL still served the preceding `index-BL4CkKbn.js`
-bundle at 03:20 UTC, so its deployment controller must pick up the pushed static
-build before a final cold live check can be recorded.
+## What passed
 
-## Environment note
+- Clean checkout: `npm ci`, `npm test` (9/9), `npm run build`, and
+  `npm run test:e2e` (39 passed, 11 intentional skips).
+- Every command in `.factory/claims.json` was invoked individually.
+- Live desktop and 390 px phone: one-click isolated sample, reset/exit without
+  real-data changes, OCR, speech edit/stop/repeat, file boundaries, all input
+  methods, persistence, export/import, offline reload, legal pages, links,
+  titles, history/focus, designed 404, and same-origin privacy.
+- Axe: zero violations across all routes, phone demo, and dark/reduced-motion
+  phone mode. Mobile Lighthouse: 100/100/100/100; LCP 1.7 s, TBT 0 ms,
+  CLS 0.011.
+- JDK 21 and Android SDK 35 were installed. JVM tests, target-35 debug APK, and
+  instrumentation APK compile successfully.
+- Independent release-APK inspection confirms target 35, exported
+  permission-protected service, `allowBackup=false`, and no INTERNET
+  permission.
 
-The supplied API-35 emulator lacks usable hardware acceleration. The Android
-instrumentation APK compiles; `scripts/test-android.sh all` automatically runs
-`connectedDebugAndroidTest` when a responsive device is attached.
+## What failed acceptance
+
+- The public v1.0.0 APK is debuggable and signed by
+  `C=US, O=Android, CN=Android Debug`, not the authorized release key.
+- `android-private-capture`, `android-selection-memory`, and
+  `protected-captures` pass their commands while device instrumentation is
+  skipped. Their promised installed outcomes remain untested.
+- `android-device-privacy` also skips its declared package-manager
+  instrumentation, although independent APK inspection confirms the current
+  flags.
+- An API-35 AOSP emulator was provisioned without KVM. It exposed Android
+  services under software emulation but did not remain stably booted;
+  `connectedDebugAndroidTest` reported no connected devices.
+- No 30-region mid-range Android benchmark proves the brief's 80% accuracy and
+  two-second success measure.
+
+## Next steps
+
+Release-sign a non-debuggable APK, make native claim commands require and run a
+real API-35 device, exercise the complete overlay/capture/OCR/TTS/repeat and
+protected-screen paths, and record the 30-region benchmark. Then request a new
+independent verification.
