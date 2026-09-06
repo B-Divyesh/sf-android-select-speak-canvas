@@ -232,7 +232,8 @@ test('@claim:offline-reload keeps the demo available after installation', async 
   await expect(page.locator('#recognizedText')).toHaveValue('The north gate opens at dawn.');
 });
 
-test('@claim:keyboard-selection moves and resizes the selection with the keyboard', async ({ page }) => {
+test('@claim:keyboard-selection moves and resizes the selection with the keyboard', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'Keyboard claim runs in the keyboard project.');
   await page.goto('/demo');
   const canvas = page.getByLabel('Loaded image with movable text selection');
   const before = await page.locator('#selectionDescription').textContent();

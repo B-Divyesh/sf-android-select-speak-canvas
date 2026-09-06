@@ -103,7 +103,10 @@ public final class NativeWorkflowInstrumentedTest {
     @Test public void bundledNativeSampleRecognizesAndRequestsExactSpeech() throws Exception {
         try (ActivityScenario<SampleScreenActivity> scenario = ActivityScenario.launch(SampleScreenActivity.class)) {
             scenario.onActivity(activity -> activity.findViewById(SampleScreenActivity.LOAD_BUTTON_ID).performClick());
-            long deadline = System.currentTimeMillis() + 20_000;
+            // The bundled model normally completes in a few seconds. Allow a
+            // software-only emulator enough time to deliver its UI callback;
+            // this claim does not make a recognition-speed promise.
+            long deadline = System.currentTimeMillis() + 90_000;
             String value = "";
             while (System.currentTimeMillis() < deadline) {
                 final String[] current = {""};

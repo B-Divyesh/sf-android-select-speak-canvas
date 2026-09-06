@@ -69,7 +69,7 @@ Its application id is `in.sociobot.tapreadcanvas`.
 Build the web app, copy it into Android, and compile the APK:
 
 ```sh
-npm run build
+VITE_NATIVE_PACKAGE=1 npm run build
 npx cap sync android
 TAPREAD_RELEASE_KEYSTORE=/secure/path/tapread-release.p12 \
 TAPREAD_RELEASE_STORE_PASSWORD=... \
@@ -77,6 +77,10 @@ TAPREAD_RELEASE_KEY_ALIAS=tapread-release \
 TAPREAD_RELEASE_KEY_PASSWORD=... \
 ANDROID_HOME=/opt/android-sdk android/gradlew -p android test assembleRelease
 ```
+
+The four native claim commands require one connected Android 15/API 35 device.
+They fail when no suitable device is connected; they do not report skipped tests as passes.
+Run `npm run test:android:benchmark` on mid-range hardware for the 30-region accuracy and latency measure.
 
 Install the [v1.0.1 APK](https://github.com/B-Divyesh/sf-android-select-speak-canvas/releases/download/v1.0.1/tapread-canvas-1.0.1.apk).
 Its SHA-256 is `4522f04af9dfbd5aa1baa4d122cb290e99911a48456acf441a2c122f169f2495`.

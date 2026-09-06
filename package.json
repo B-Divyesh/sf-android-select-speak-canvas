@@ -17,6 +17,7 @@
     "test:e2e": "playwright test",
     "test:android": "bash scripts/test-android.sh all",
     "test:android:claim": "bash scripts/test-android.sh",
+    "test:android:benchmark": "bash scripts/test-android.sh android-benchmark",
     "check": "npm test && npm run build"
   },
   "dependencies": {

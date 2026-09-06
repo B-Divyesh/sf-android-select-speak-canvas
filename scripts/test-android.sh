@@ -15,6 +15,9 @@ case "$claim" in
   android-device-privacy)
     instrumentation='in.sociobot.tapreadcanvas.NativeWorkflowInstrumentedTest#backupAndNetworkCapabilitiesAreDisabled'
     ;;
+  android-benchmark)
+    instrumentation='in.sociobot.tapreadcanvas.NativeOcrBenchmarkInstrumentedTest#thirtyRegionsMeetAccuracyAndLatencyTarget'
+    ;;
   all)
     instrumentation='in.sociobot.tapreadcanvas.NativeWorkflowInstrumentedTest'
     ;;
@@ -46,8 +49,30 @@ npm run build
 npx cap sync android
 android/gradlew -p android --no-daemon :app:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest
 
-"$adb" install -r -t android/app/build/outputs/apk/debug/app-debug.apk
-"$adb" install -r -t android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+install_if_changed() {
+  local package_name="$1"
+  local apk="$2"
+  local local_checksum remote_path remote_checksum
+  local_checksum="$(sha256sum "$apk" | cut -d' ' -f1)"
+  remote_path="$("$adb" shell pm path "$package_name" 2>/dev/null | head -n 1 | tr -d '\r' | sed 's/^package://')"
+  remote_checksum=""
+  if [[ -n "$remote_path" ]]; then
+    remote_checksum="$("$adb" shell sha256sum "$remote_path" 2>/dev/null | cut -d' ' -f1 | tr -d '\r')"
+  fi
+  if [[ "$local_checksum" == "$remote_checksum" ]]; then
+    echo "$package_name already has the exact tested APK."
+  else
+    "$adb" install -r -t "$apk"
+  fi
+}
+
+install_if_changed in.sociobot.tapreadcanvas android/app/build/outputs/apk/debug/app-debug.apk
+install_if_changed in.sociobot.tapreadcanvas.test android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+# Software-emulated API 35 devices can otherwise hit Android's process-start
+# watchdog before AndroidJUnitRunner is compiled. This does not bypass tests;
+# it compiles the exact installed packages before starting instrumentation.
+"$adb" shell cmd package compile -m speed in.sociobot.tapreadcanvas >/dev/null
+"$adb" shell cmd package compile -m speed in.sociobot.tapreadcanvas.test >/dev/null
 result="$("$adb" shell am instrument -w -r -e class "$instrumentation" in.sociobot.tapreadcanvas.test/androidx.test.runner.AndroidJUnitRunner)"
 printf '%s\n' "$result"
 if ! grep -Eq '^OK \([1-9][0-9]* tests?\)$' <<<"$result"; then

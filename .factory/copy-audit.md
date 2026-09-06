@@ -1,6 +1,6 @@
-# Copy audit — polish round 2
+# Copy audit — repair 2
 
-Audited 29 August 2026. Counts treat contractions and hyphenated terms as one word. No sentence exceeds 22 words. No sentence uses a banned marketing word.
+Audited 6 September 2026. Counts treat contractions and hyphenated terms as one word. No sentence exceeds 22 words. No sentence uses a banned marketing word.
 
 ## First screen
 
