@@ -1,7 +1,8 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
+import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile, unlink, writeFile } from 'node:fs/promises';
 import sharp from 'sharp';
 
 test.beforeEach(async ({ page }) => {
@@ -313,16 +314,32 @@ test('mobile layout has no horizontal overflow and keeps controls reachable', as
 
 test('public version matches package and Android metadata', async ({ page }) => {
   await page.goto('/');
-  await expect(page.locator('.build-note')).toContainText(/v1\.0\.0 · [0-9a-f]{7}/);
-  await expect(page.locator('#androidDownload')).toHaveAttribute('href', /releases\/download\/v1\.0\.0\/tapread-canvas-1\.0\.0\.apk$/);
+  await expect(page.locator('.build-note')).toContainText(/v1\.0\.1 · [0-9a-f]{7}/);
+  await expect(page.locator('#androidDownload')).toHaveAttribute('href', /releases\/download\/v1\.0\.1\/tapread-canvas-1\.0\.1\.apk$/);
 });
 
 test('@claim:android-install published Android APK is downloadable', async ({ request }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile', 'Verify the 54 MB release once.');
-  const response = await request.get('https://github.com/B-Divyesh/sf-android-select-speak-canvas/releases/download/v1.0.0/tapread-canvas-1.0.0.apk');
+  const response = await request.get('https://github.com/B-Divyesh/sf-android-select-speak-canvas/releases/download/v1.0.1/tapread-canvas-1.0.1.apk');
   expect(response.ok()).toBe(true);
   const body = await response.body();
   expect(body.subarray(0, 2).toString()).toBe('PK');
   expect(body.length).toBeGreaterThan(1_000_000);
-  expect(createHash('sha256').update(body).digest('hex')).toBe('72e874c9df0ecae371e444100af2f78b348cc408ba88f56a236655e4efe89d8d');
+  expect(createHash('sha256').update(body).digest('hex')).toBe('4522f04af9dfbd5aa1baa4d122cb290e99911a48456acf441a2c122f169f2495');
+  const androidHome = process.env.ANDROID_HOME || '/opt/android-sdk';
+  const apkPath = `/tmp/tapread-public-${process.pid}.apk`;
+  await writeFile(apkPath, body);
+  try {
+    const signature = execFileSync(`${androidHome}/build-tools/35.0.0/apksigner`, ['verify', '--verbose', '--print-certs', apkPath], { encoding: 'utf8' });
+    expect(signature).toContain('Verified using v2 scheme (APK Signature Scheme v2): true');
+    expect(signature).toContain('Signer #1 certificate DN: CN=TapRead Canvas, OU=Android Release, O=Param Factory, C=IN');
+    expect(signature).toContain('Signer #1 certificate SHA-256 digest: 4e406c73f4fa4f3c0eba3262bac93adfd5254db682075258f699e504ec5ecb4c');
+    expect(signature).not.toContain('O=Android, CN=Android Debug');
+    const manifest = execFileSync(`${androidHome}/cmdline-tools/latest/bin/apkanalyzer`, ['manifest', 'print', apkPath], { encoding: 'utf8' });
+    expect(manifest).not.toContain('android:debuggable="true"');
+    expect(manifest).not.toContain('android.permission.INTERNET');
+    expect(manifest).toContain('android:targetSdkVersion="35"');
+  } finally {
+    await unlink(apkPath);
+  }
 });

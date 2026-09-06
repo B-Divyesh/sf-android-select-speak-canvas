@@ -106,37 +106,37 @@
   },
   {
     "id": "android-install",
-    "claim": "A signed TapRead Android APK is available from the landing page.",
+    "claim": "A production-signed, non-debuggable TapRead Android APK is available from the landing page.",
     "where": "landing action, README",
     "test": "npm run test:e2e -- --grep @claim:android-install --project=chromium",
-    "sandbox": "download the release asset and assert it is a non-empty APK archive"
+    "sandbox": "download the release asset; verify checksum, release certificate, signature scheme, target SDK, debuggable flag, and network permission"
   },
   {
     "id": "android-private-capture",
     "claim": "The target-35 Android app uses explicit screen-share consent, local recognition, and device speech.",
     "where": "landing walkthrough, Privacy, Terms, README",
-    "test": "npm test -- --run tests/native-companion.test.ts -t @claim:android-private-capture",
-    "sandbox": "compile the target-35 APK and instrumentation; run the native recognized-text-to-speech outcome test"
+    "test": "npm run test:android:claim -- android-private-capture",
+    "sandbox": "require an API-35 device; install both APKs; verify protected service registration, Android-owned consent intent, bundled OCR, and exact speech request"
   },
   {
     "id": "android-selection-memory",
     "claim": "The Android app saves and exactly repeats the latest selection reading.",
     "where": "landing steps, Privacy, README",
-    "test": "npm test -- --run tests/native-companion.test.ts -t @claim:android-selection-memory",
-    "sandbox": "compile the Android app and assert the native state machine saves and repeats exact fixture text"
+    "test": "npm run test:android:claim -- android-selection-memory",
+    "sandbox": "require an API-35 device; recreate the Android preference-backed reading session and assert exact selection restoration and repeat output"
   },
   {
     "id": "protected-captures",
     "claim": "TapRead refuses blank protected captures and does not bypass Android capture controls.",
     "where": "reader notice, Terms, README",
-    "test": "npm test -- --run tests/native-companion.test.ts -t @claim:protected-captures",
-    "sandbox": "compile the Android app and assert blank input cannot be saved or spoken; device instrumentation tests blank pixels"
+    "test": "npm run test:android:claim -- protected-captures",
+    "sandbox": "require an API-35 device; feed blank and visible Android bitmaps through the same protected-buffer decision used by capture"
   },
   {
     "id": "android-device-privacy",
     "claim": "Android backup and network access are disabled for captured and recognized content.",
     "where": "Privacy, README",
-    "test": "npm test -- --run tests/native-companion.test.ts -t @claim:android-device-privacy",
-    "sandbox": "compile the APK and run package-manager instrumentation assertions for backup flags and INTERNET permission"
+    "test": "npm run test:android:claim -- android-device-privacy",
+    "sandbox": "require an API-35 device; install the APK and query package-manager flags for backup and INTERNET permission"
   }
 ]

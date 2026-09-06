@@ -1,18 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-case "${1:-all}" in
-  android-private-capture|android-selection-memory)
-    unit_filter='in.sociobot.tapreadcanvas.NativeReadingSessionTest'
+claim="${1:-all}"
+case "$claim" in
+  android-private-capture)
+    instrumentation='in.sociobot.tapreadcanvas.NativeWorkflowInstrumentedTest#captureContractUsesSystemConsentAndProtectedService,in.sociobot.tapreadcanvas.NativeWorkflowInstrumentedTest#bundledNativeSampleRecognizesAndRequestsExactSpeech'
+    ;;
+  android-selection-memory)
+    instrumentation='in.sociobot.tapreadcanvas.NativeWorkflowInstrumentedTest#selectionAndReadingSurviveStoreRecreation'
     ;;
   protected-captures)
-    unit_filter='in.sociobot.tapreadcanvas.NativeReadingSessionTest.blankRecognitionIsNotSavedOrSpoken'
+    instrumentation='in.sociobot.tapreadcanvas.NativeWorkflowInstrumentedTest#protectedBlankBufferIsRefusedButVisiblePixelsAreNot'
     ;;
   android-device-privacy)
-    unit_filter='in.sociobot.tapreadcanvas.NativeReadingSessionTest'
+    instrumentation='in.sociobot.tapreadcanvas.NativeWorkflowInstrumentedTest#backupAndNetworkCapabilitiesAreDisabled'
     ;;
   all)
-    unit_filter='in.sociobot.tapreadcanvas.*'
+    instrumentation='in.sociobot.tapreadcanvas.NativeWorkflowInstrumentedTest'
     ;;
   *)
     echo "Unknown Android claim: $1" >&2
@@ -22,13 +26,32 @@ esac
 
 export ANDROID_HOME="${ANDROID_HOME:-/opt/android-sdk}"
 export JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/java-21-openjdk-amd64}"
+adb="$ANDROID_HOME/platform-tools/adb"
+
+if [[ ! -x "$adb" ]]; then
+  echo "Android platform-tools are required at $adb." >&2
+  exit 1
+fi
+if [[ "$("$adb" get-state 2>/dev/null || true)" != "device" ]]; then
+  echo "@claim:$claim requires one connected Android device; no device test ran." >&2
+  exit 1
+fi
+device_sdk="$("$adb" shell getprop ro.build.version.sdk | tr -d '\r')"
+if [[ ! "$device_sdk" =~ ^[0-9]+$ ]] || (( device_sdk < 35 )); then
+  echo "@claim:$claim requires Android API 35 or newer; connected device is API $device_sdk." >&2
+  exit 1
+fi
 
 npm run build
 npx cap sync android
-android/gradlew -p android :app:testDebugUnitTest --tests "$unit_filter" :app:assembleDebug :app:assembleDebugAndroidTest
+android/gradlew -p android --no-daemon :app:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest
 
-if "$ANDROID_HOME/platform-tools/adb" get-state >/dev/null 2>&1 && "$ANDROID_HOME/platform-tools/adb" shell getprop ro.build.version.sdk >/dev/null 2>&1; then
-  android/gradlew -p android :app:connectedDebugAndroidTest
-else
-  echo "Android instrumentation was compiled but no device is connected." >&2
+"$adb" install -r -t android/app/build/outputs/apk/debug/app-debug.apk
+"$adb" install -r -t android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+result="$("$adb" shell am instrument -w -r -e class "$instrumentation" in.sociobot.tapreadcanvas.test/androidx.test.runner.AndroidJUnitRunner)"
+printf '%s\n' "$result"
+if ! grep -Eq '^OK \([1-9][0-9]* tests?\)$' <<<"$result"; then
+  echo "@claim:$claim did not complete its Android instrumentation outcome." >&2
+  exit 1
 fi
+echo "@claim:$claim passed on Android API $device_sdk."

@@ -5,12 +5,12 @@ const buildId = process.env.BUILD_ID || execFileSync('git', ['rev-parse', '--sho
 
 export default defineConfig({
   define: {
-    __APP_VERSION__: JSON.stringify('1.0.0'),
+    __APP_VERSION__: JSON.stringify('1.0.1'),
     __BUILD_ID__: JSON.stringify(buildId),
   },
   build: {
     target: 'es2022',
-    sourcemap: true,
+    sourcemap: process.env.VITE_NATIVE_PACKAGE !== '1',
     rollupOptions: {
       output: {
         manualChunks: {

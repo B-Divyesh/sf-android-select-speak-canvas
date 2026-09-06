@@ -4,7 +4,7 @@ TapRead Canvas reads selected screen or image text aloud on Android.
 It helps when games, streams, remote desktops, and custom canvases lack usable labels.
 The installable web image reader handles screenshots and saved images.
 
-[Try the isolated sample](https://android-select-speak-canvas.sociobot.in/demo) or [download the Android APK](https://github.com/B-Divyesh/sf-android-select-speak-canvas/releases/download/v1.0.0/tapread-canvas-1.0.0.apk).
+[Try the isolated sample](https://android-select-speak-canvas.sociobot.in/demo) or [download the Android APK](https://github.com/B-Divyesh/sf-android-select-speak-canvas/releases/download/v1.0.1/tapread-canvas-1.0.1.apk).
 The demo uses separate browser storage and never reads normal reader data.
 
 ## What is included
@@ -71,11 +71,15 @@ Build the web app, copy it into Android, and compile the APK:
 ```sh
 npm run build
 npx cap sync android
-ANDROID_HOME=/opt/android-sdk android/gradlew -p android test assembleDebug
+TAPREAD_RELEASE_KEYSTORE=/secure/path/tapread-release.p12 \
+TAPREAD_RELEASE_STORE_PASSWORD=... \
+TAPREAD_RELEASE_KEY_ALIAS=tapread-release \
+TAPREAD_RELEASE_KEY_PASSWORD=... \
+ANDROID_HOME=/opt/android-sdk android/gradlew -p android test assembleRelease
 ```
 
-Install the [v1.0.0 APK](https://github.com/B-Divyesh/sf-android-select-speak-canvas/releases/download/v1.0.0/tapread-canvas-1.0.0.apk).
-Its SHA-256 is `72e874c9df0ecae371e444100af2f78b348cc408ba88f56a236655e4efe89d8d`.
+Install the [v1.0.1 APK](https://github.com/B-Divyesh/sf-android-select-speak-canvas/releases/download/v1.0.1/tapread-canvas-1.0.1.apk).
+Its SHA-256 is `4522f04af9dfbd5aa1baa4d122cb290e99911a48456acf441a2c122f169f2495`.
 
 On Android, enable TapRead in Accessibility settings.
 Tap the floating TapRead button.
@@ -89,6 +93,7 @@ The last selection and reading are stored for repeat.
 
 Sign release builds with the Param Factory Android release key.
 Never add that key to Git.
+The repository workflow retrieves this product’s encrypted signing material from GitHub Actions secrets.
 
 ## Privacy and limitations
 

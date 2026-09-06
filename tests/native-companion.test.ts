@@ -1,32 +1,7 @@
 import { readFile } from 'node:fs/promises';
-import { execFileSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 
 const read = (path: string) => readFile(new URL(path, import.meta.url), 'utf8');
-
-describe('native Android companion regression contract', () => {
-  const runClaim = (claim: string) => execFileSync('bash', ['scripts/test-android.sh', claim], {
-    cwd: new URL('..', import.meta.url),
-    encoding: 'utf8',
-    env: { ...process.env, ANDROID_HOME: process.env.ANDROID_HOME || '/opt/android-sdk', JAVA_HOME: process.env.JAVA_HOME || '/usr/lib/jvm/java-21-openjdk-amd64' },
-  });
-
-  it('@claim:android-private-capture builds the target-35 app and runs native reading outcomes', () => {
-    expect(runClaim('android-private-capture')).toContain('BUILD SUCCESSFUL');
-  });
-
-  it('@claim:android-selection-memory saves and repeats the exact native reading', () => {
-    expect(runClaim('android-selection-memory')).toContain('BUILD SUCCESSFUL');
-  });
-
-  it('@claim:protected-captures rejects blank recognition output', () => {
-    expect(runClaim('protected-captures')).toContain('BUILD SUCCESSFUL');
-  });
-
-  it('@claim:android-device-privacy packages with backup and network access disabled', () => {
-    expect(runClaim('android-device-privacy')).toContain('BUILD SUCCESSFUL');
-  });
-});
 
 describe('static host protection regression contract', () => {
   it('ships deployable CSP, permission policy, framing protection, and immutable hashed asset caching', async () => {
