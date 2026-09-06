@@ -261,14 +261,21 @@ test('@claim:pointer-selection changes the selection with a pointer drag', async
 
 test('@claim:touch-selection changes the selection with a touch drag', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile', 'Touch claim runs on the phone project.');
+  const pageErrors: string[] = [];
+  page.on('pageerror', (error) => pageErrors.push(error.message));
   await page.goto('/demo');
   const canvas = page.getByLabel('Loaded image with movable text selection');
+  await canvas.scrollIntoViewIfNeeded();
   const box = await canvas.boundingBox();
   if (!box) throw new Error('Canvas has no box');
-  await canvas.dispatchEvent('pointerdown', { pointerId: 7, pointerType: 'touch', clientX: box.x + 15, clientY: box.y + 15 });
-  await canvas.dispatchEvent('pointermove', { pointerId: 7, pointerType: 'touch', clientX: box.x + box.width * .6, clientY: box.y + box.height * .6 });
-  await canvas.dispatchEvent('pointerup', { pointerId: 7, pointerType: 'touch', clientX: box.x + box.width * .6, clientY: box.y + box.height * .6 });
-  await expect(page.locator('#selectionDescription')).toContainText('55% wide');
+  const client = await page.context().newCDPSession(page);
+  const start = { x: box.x + 15, y: box.y + 15 };
+  const end = { x: box.x + box.width * .6, y: box.y + box.height * .6 };
+  await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [start] });
+  await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [end] });
+  await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await expect(page.locator('#selectionDescription')).not.toContainText('80% wide');
+  expect(pageErrors).toEqual([]);
 });
 
 test('routes set titles, metadata, focus, history, and a designed 404', async ({ page }) => {

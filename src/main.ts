@@ -199,9 +199,15 @@ async function startProduct(demo: boolean): Promise<() => void> {
   }
 
   function point(event: PointerEvent): { x: number; y: number } { const rect = canvas.getBoundingClientRect(); return { x: (event.clientX - rect.left) * canvas.width / rect.width, y: (event.clientY - rect.top) * canvas.height / rect.height }; }
-  canvas.addEventListener('pointerdown', (event) => { pointerStart = point(event); canvas.setPointerCapture(event.pointerId); });
+  canvas.addEventListener('pointerdown', (event) => {
+    pointerStart = point(event);
+    // Programmatic accessibility tools can dispatch a valid selection gesture
+    // without creating a browser-level pointer capture token.
+    try { canvas.setPointerCapture(event.pointerId); } catch { /* keep the selection gesture active */ }
+  });
   canvas.addEventListener('pointermove', (event) => { if (!pointerStart) return; const current = point(event); selection = clampSelection({ x: Math.min(pointerStart.x, current.x), y: Math.min(pointerStart.y, current.y), width: Math.abs(current.x - pointerStart.x), height: Math.abs(current.y - pointerStart.y) }, canvas.width, canvas.height); draw(); });
   canvas.addEventListener('pointerup', () => { pointerStart = null; void saveState(); });
+  canvas.addEventListener('pointercancel', () => { pointerStart = null; });
   canvas.addEventListener('keydown', (event) => { if (!selection || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return; event.preventDefault(); const step = event.ctrlKey ? 1 : Math.max(4, Math.round(canvas.width / 150)); const horizontal = event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0; const vertical = event.key === 'ArrowUp' ? -step : event.key === 'ArrowDown' ? step : 0; selection = event.shiftKey ? clampSelection({ ...selection, width: selection.width + horizontal, height: selection.height + vertical }, canvas.width, canvas.height) : clampSelection({ ...selection, x: selection.x + horizontal, y: selection.y + vertical }, canvas.width, canvas.height); draw(); void saveState(); });
 
   async function recognize(): Promise<void> {
