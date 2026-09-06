@@ -39,6 +39,8 @@ The native runner now exits nonzero when no API-35 device is connected, installs
 - Added the native build flag to the documented release command and refreshed the copy audit.
 - Copied the 79-character, verb-first catalog description to `/work/.evidence/catalog-description.txt`.
 
+All earlier Review 1 and Verification 1 items remain closed. The Review 2 items reopened by verification 3 are now covered by the release inspection and API-35 outcomes above. The previously closed demo, claims ledger, first screen, 404, metadata, copy, accessibility, cache headers, formats, input methods, speech controls, persistence, portability, touch targets, and version checks all passed again. F-2-08 also gained an outcome check that returns to the originating link in view after browser Back.
+
 ## Verification completed
 
 From a clean dependency install:
