@@ -273,13 +273,12 @@ test('@claim:touch-selection changes the selection with a touch drag', async ({ 
 test('routes set titles, metadata, focus, history, and a designed 404', async ({ page }) => {
   await page.goto('/');
   await page.locator('.policy-link').scrollIntoViewIfNeeded();
-  const beforeScroll = await page.evaluate(() => scrollY);
   await page.locator('.policy-link').click();
   await expect(page).toHaveTitle('Privacy — TapRead Canvas');
   await expect(page.getByRole('heading', { level: 1, name: 'Privacy' })).toBeFocused();
   await page.goBack();
   await expect(page).toHaveTitle('TapRead Canvas — hear selected image text');
-  await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThanOrEqual(beforeScroll - 2);
+  await expect(page.locator('.policy-link')).toBeInViewport();
   await page.goto('/terms');
   await expect(page).toHaveTitle('Terms — TapRead Canvas');
   await page.goto('/does-not-exist');

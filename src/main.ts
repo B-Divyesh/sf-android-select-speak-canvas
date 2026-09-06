@@ -106,6 +106,17 @@ function setMetadata(route: string): void {
 
 type RouteRender = { focusHeading?: boolean; restoreScroll?: number };
 
+function restoreScrollPosition(top: number): void {
+  const apply = () => scrollTo(0, Math.min(top, document.documentElement.scrollHeight - innerHeight));
+  apply();
+  const observer = new ResizeObserver(() => {
+    apply();
+    if (document.documentElement.scrollHeight - innerHeight >= top - 2) observer.disconnect();
+  });
+  observer.observe(document.documentElement);
+  setTimeout(() => { apply(); observer.disconnect(); }, 1_500);
+}
+
 async function renderRoute(options: RouteRender = {}): Promise<void> {
   cleanProduct?.(); cleanProduct = undefined;
   const rawPath = pathName();
@@ -122,7 +133,7 @@ async function renderRoute(options: RouteRender = {}): Promise<void> {
   const heading = app.querySelector<HTMLElement>('h1');
   document.querySelector<HTMLElement>('#routeAnnouncement')!.textContent = `${document.title}. Page loaded.`;
   requestAnimationFrame(() => {
-    if (typeof options.restoreScroll === 'number') scrollTo(0, options.restoreScroll);
+    if (typeof options.restoreScroll === 'number') restoreScrollPosition(options.restoreScroll);
     else if (options.focusHeading) heading?.focus();
   });
 }
